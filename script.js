@@ -1,6 +1,6 @@
 import { ConvexClient } from "https://esm.sh/convex@1.28.2/browser";
 
-const convex = new ConvexClient("https://outstanding-mongoose-922.convex.cloud");
+const convex = new ConvexClient("https://fast-bear-5.convex.cloud");
 
 const form = document.getElementById("prayer-form");
 const statusMessage = document.getElementById("statusMessage");
