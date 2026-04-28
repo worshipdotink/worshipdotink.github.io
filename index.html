@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Worship Night 2026 Prayer Requests</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="page">
+      <section class="card">
+        <h1>Worship Night 2026</h1>
+        <p class="intro">Share your prayer request and our team will pray with you.</p>
+
+        <form id="prayer-form" class="form">
+          <label class="field">
+            <span>First Name</span>
+            <input id="firstName" type="text" required />
+          </label>
+
+          <label class="field">
+            <span>Prayer Request</span>
+            <textarea id="prayerRequest" rows="6" required></textarea>
+          </label>
+
+          <label class="field">
+            <span>Email (Optional)</span>
+            <input id="email" type="email" />
+          </label>
+
+          <label class="checkboxRow">
+            <input id="isPrivate" type="checkbox" />
+            <span>Keep this prayer request private</span>
+          </label>
+
+          <button id="submitButton" type="submit">Submit Prayer Request</button>
+        </form>
+
+        <p id="statusMessage" class="statusMessage" aria-live="polite"></p>
+      </section>
+    </main>
+
+    <script type="module" src="./script.js"></script>
+  </body>
+</html>
