@@ -1,0 +1,379 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="data:," />
+    <title>Prayer Request Lower Third Viewer</title>
+    <style>
+      :root {
+        --lower-third-height: 255px;
+        --panel-bg: white;
+        --panel-border: rgba(255, 255, 255, 0.12);
+        --text-primary: black;
+        --text-secondary: black;
+        --accent: #FF4331;
+      }
+
+      @font-face {
+        font-family: "Cowboy Standard";
+        src: url("./Cowboy-Standard.otf") format("opentype");
+        font-weight: normal;
+        font-style: normal;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        margin: 0;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+        font-family: "Cowboy Standard", Inter, Avenir, Helvetica, Arial, sans-serif;
+        background: transparent;
+        color: var(--text-primary);
+      }
+
+      .viewer {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        height: var(--lower-third-height);
+        display: flex;
+        align-items: stretch;
+        background: #DEA97C;
+        border-top: 1px solid var(--panel-border);
+        backdrop-filter: blur(6px);
+      }
+
+      .qr-panel {
+        width: 220px;
+        min-width: 220px;
+        padding: 18px 16px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 10px;
+        text-align: center;
+        position: relative;
+        z-index: 2;
+      }
+
+      .qr-panel img {
+        width: 136px;
+        height: 136px;
+        border-radius: 10px;
+        background: #dea97c;
+        padding: 6px;
+      }
+
+      .qr-caption {
+        font-size: 1.5rem;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+      }
+
+      .ticker-wrap {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+        position: relative;
+      }
+
+      .ticker-wrap::before {
+        content: "";
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 65px;
+        background: linear-gradient(to right, #dea97c 0%, rgba(222, 169, 124, 0) 100%);
+        z-index: 3;
+        pointer-events: none;
+      }
+
+      .ticker-track {
+        display: inline-flex;
+        align-items: center;
+        width: max-content;
+        padding: 0;
+        gap: 0;
+        will-change: transform;
+        transform: translate3d(0, 0, 0);
+        backface-visibility: hidden;
+        contain: layout style paint;
+      }
+
+      .ticker-set {
+        display: inline-flex;
+        align-items: center;
+        gap: 18px;
+        backface-visibility: hidden;
+      }
+
+      .ticker-buffer {
+        flex: 0 0 520px;
+        width: 520px;
+      }
+
+      .request-card {
+        flex: 0 0 360px;
+        width: 360px;
+        height: 170px;
+        border: 2px solid #000;
+        padding: 16px 18px;
+        background: var(--panel-bg);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        box-shadow: 8px 8px 0 #000;
+        backface-visibility: hidden;
+        transform: translateZ(0);
+      }
+
+      .request-name {
+        color: var(--accent);
+        font-weight: 700;
+        font-size: 1.1rem;
+        letter-spacing: 0.02em;
+      }
+
+      .request-text {
+        color: var(--text-primary);
+        font-size: 1rem;
+        line-height: 1.35;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 4;
+        line-clamp: 4;
+        -webkit-box-orient: vertical;
+      }
+
+      .status {
+        padding: 0 24px;
+        font-size: 1rem;
+        color: var(--text-secondary);
+      }
+
+    </style>
+  </head>
+  <body>
+    <div class="viewer">
+      <aside class="qr-panel">
+        <img
+          src="https://api.qrserver.com/v1/create-qr-code/?size=280x280&color=0-0-0&bgcolor=222-169-124&data=https%3A%2F%2Fworship.ink%2F"
+          alt="QR code to worship.ink"
+        />
+        <div class="qr-caption">SUBMIT A PRAYER REQUEST</div>
+      </aside>
+
+      <section class="ticker-wrap">
+        <div id="status" class="status">Loading prayer requests...</div>
+        <div id="tickerTrack" class="ticker-track" style="display: none"></div>
+      </section>
+    </div>
+
+    <script type="module">
+      import { ConvexClient } from "https://esm.sh/convex@1.28.2/browser";
+
+      const convex = new ConvexClient("https://fast-bear-5.convex.cloud");
+      const statusEl = document.getElementById("status");
+      const tickerTrack = document.getElementById("tickerTrack");
+      const pixelsPerSecond = 80;
+
+      let displayedRequests = [];
+      let displayedIds = new Set();
+      let firstSetEl = null;
+      let secondSetEl = null;
+      let firstBufferEl = null;
+      let secondBufferEl = null;
+      let loopWidth = 0;
+      let tickerOffset = 0;
+      let animationFrameId = null;
+      let lastFrameTime = null;
+      let pendingAppends = [];
+      let pendingLiveIds = null;
+
+      function escapeHtml(value) {
+        return value
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;")
+          .replaceAll("'", "&#039;");
+      }
+
+      function extractFirstName(name) {
+        return name.trim().split(/\s+/)[0] ?? "";
+      }
+
+      function buildCardHtml(request) {
+        const submittedName = request.name ?? request.firstName ?? "";
+        return `<article class="request-card"><div class="request-name">${escapeHtml(extractFirstName(submittedName))}</div><div class="request-text">${escapeHtml(request.prayerRequest)}</div></article>`;
+      }
+
+      function rebuildTickerSets() {
+        const cardsHtml = displayedRequests.map(buildCardHtml).join("");
+        tickerTrack.innerHTML = `<div class="ticker-set">${cardsHtml}<div class="ticker-buffer"></div></div><div class="ticker-set">${cardsHtml}<div class="ticker-buffer"></div></div>`;
+        [firstSetEl, secondSetEl] = tickerTrack.querySelectorAll(".ticker-set");
+        [firstBufferEl, secondBufferEl] = tickerTrack.querySelectorAll(".ticker-buffer");
+        if (!firstSetEl) {
+          loopWidth = 0;
+          return;
+        }
+
+        loopWidth = firstSetEl.scrollWidth;
+      }
+
+      function stopTickerMotion() {
+        if (animationFrameId !== null) {
+          cancelAnimationFrame(animationFrameId);
+          animationFrameId = null;
+        }
+        lastFrameTime = null;
+      }
+
+      function appendRequestToSets(request) {
+        const cardHtml = buildCardHtml(request);
+        firstBufferEl.insertAdjacentHTML("beforebegin", cardHtml);
+        secondBufferEl.insertAdjacentHTML("beforebegin", cardHtml);
+        loopWidth = firstSetEl.scrollWidth;
+      }
+
+      function tick(now) {
+        if (lastFrameTime === null) {
+          lastFrameTime = now;
+        }
+
+        const dtSeconds = (now - lastFrameTime) / 1000;
+        lastFrameTime = now;
+        tickerOffset -= pixelsPerSecond * dtSeconds;
+
+        if (loopWidth > 0 && tickerOffset <= -loopWidth) {
+          tickerOffset += loopWidth;
+          applyPendingChanges();
+          // Keep seam stable after any queued DOM changes.
+          tickerOffset = 0;
+        }
+
+        const stableOffset = Math.round(tickerOffset * 1000) / 1000;
+        tickerTrack.style.transform = `translate3d(${stableOffset}px, 0, 0)`;
+        animationFrameId = requestAnimationFrame(tick);
+      }
+
+      function startTickerMotion() {
+        stopTickerMotion();
+        animationFrameId = requestAnimationFrame(tick);
+      }
+
+      function renderInitialTicker(requests) {
+        displayedRequests = requests.slice().reverse();
+        displayedIds = new Set(displayedRequests.map((request) => request._id));
+
+        rebuildTickerSets();
+        statusEl.style.display = "none";
+        tickerTrack.style.display = "inline-flex";
+        tickerOffset = 0;
+        tickerTrack.style.transform = "translateX(0px)";
+        startTickerMotion();
+      }
+
+      function applyPendingChanges() {
+        if (!pendingAppends.length && !pendingLiveIds) {
+          return;
+        }
+
+        if (pendingAppends.length) {
+          for (const request of pendingAppends) {
+            if (!displayedIds.has(request._id)) {
+              displayedRequests.push(request);
+              displayedIds.add(request._id);
+              appendRequestToSets(request);
+            }
+          }
+          pendingAppends = [];
+        }
+
+        if (pendingLiveIds) {
+          // Ignore removals while ticker runs to avoid visible flicker from full-track rebuilds.
+          pendingLiveIds = null;
+        }
+      }
+
+      function queueTickerSync(requests) {
+        if (!displayedRequests.length) {
+          renderInitialTicker(requests);
+          return;
+        }
+
+        const liveIdsNow = new Set(requests.map((request) => request._id));
+        const knownIds = new Set([
+          ...displayedIds,
+          ...pendingAppends.map((request) => request._id),
+        ]);
+        const appended = requests
+          .slice()
+          .reverse()
+          .filter((request) => !knownIds.has(request._id));
+
+        if (appended.length) {
+          pendingAppends.push(...appended);
+        }
+
+        pendingLiveIds = liveIdsNow;
+      }
+
+      function showEmptyState(message) {
+        stopTickerMotion();
+        displayedRequests = [];
+        displayedIds = new Set();
+        pendingAppends = [];
+        pendingLiveIds = null;
+        firstSetEl = null;
+        secondSetEl = null;
+        firstBufferEl = null;
+        secondBufferEl = null;
+        loopWidth = 0;
+        tickerOffset = 0;
+        tickerTrack.style.transform = "translateX(0px)";
+        tickerTrack.style.display = "none";
+        tickerTrack.innerHTML = "";
+        statusEl.textContent = message;
+        statusEl.style.display = "block";
+      }
+
+      function initRealtime() {
+        try {
+          convex.onUpdate(
+            "prayerRequests:listPublic",
+            {},
+            (requests) => {
+              if (!requests.length) {
+                showEmptyState("No public prayer requests yet.");
+                return;
+              }
+
+              queueTickerSync(requests);
+            },
+            (error) => {
+              showEmptyState(
+                error instanceof Error ? error.message : "Unable to load prayer requests.",
+              );
+            },
+          );
+        } catch (error) {
+          showEmptyState(error instanceof Error ? error.message : "Unable to load prayer requests.");
+        }
+      }
+
+      initRealtime();
+    </script>
+  </body>
+</html>
