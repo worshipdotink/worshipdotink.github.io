@@ -75,34 +75,76 @@ textarea {
 }
 
 .checkboxRow {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.65rem;
+  width: fit-content;
+  padding: 0.7rem 0.9rem;
+  border: 2px solid #000;
+  background: #fff;
+  box-shadow: 6px 6px 0 #000;
+}
+
+.checkboxRow input[type='checkbox'] {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: #ff4331;
+  cursor: pointer;
+}
+
+.checkboxRow span {
+  line-height: 1.2;
 }
 
 button {
   width: fit-content;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid #777;
-  background: #f2f2f2;
+  padding: 0.75rem 1.1rem;
+  border: 2px solid #000;
+  background: #fff;
   color: #111;
   cursor: pointer;
+  font: inherit;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  box-shadow: 8px 8px 0 #000;
+  transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
+}
+
+button:hover:not(:disabled) {
+  background: #fff4ec;
+  transform: translate(-1px, -1px);
+  box-shadow: 9px 9px 0 #000;
+}
+
+button:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: 5px 5px 0 #000;
 }
 
 button:disabled {
-  opacity: 0.7;
-  cursor: wait;
+  opacity: 0.8;
+  cursor: not-allowed;
+  box-shadow: 4px 4px 0 #000;
 }
 
 .statusMessage {
-  margin-top: 0.75rem;
+  margin-top: 1rem;
   min-height: 1.4em;
+  width: fit-content;
 }
 
 .statusMessage.success {
-  color: #06783a;
+  color: #111;
+  background: #e9ffd7;
+  border: 2px solid #000;
+  box-shadow: 6px 6px 0 #000;
+  padding: 0.65rem 0.9rem;
 }
 
 .statusMessage.error {
-  color: #b00020;
+  color: #111;
+  background: #ffdada;
+  border: 2px solid #000;
+  box-shadow: 6px 6px 0 #000;
+  padding: 0.65rem 0.9rem;
 }
