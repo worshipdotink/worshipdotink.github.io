@@ -31,11 +31,15 @@ body {
 
 .card {
   width: 100%;
+  background: #fff8f2;
+  border: 3px solid #000;
+  box-shadow: 12px 12px 0 #000;
+  padding: 1.5rem;
 }
 
 .form {
   display: grid;
-  gap: 1rem;
+  gap: 1.1rem;
 }
 
 .field {
@@ -52,21 +56,20 @@ body {
 input[type='text'],
 input[type='email'],
 textarea {
-  border: 2px solid #000;
+  border: 1px solid #1f1f1f;
   background: #fff;
   color: #111;
-  padding: 0.85rem 1rem;
+  padding: 0.75rem 0.9rem;
   font: inherit;
-  border-radius: 0;
-  box-shadow: 8px 8px 0 #000;
+  border-radius: 6px;
   outline: none;
 }
 
 input[type='text']:focus,
 input[type='email']:focus,
 textarea:focus {
-  transform: translate(-1px, -1px);
-  box-shadow: 9px 9px 0 #000;
+  border-color: #000;
+  box-shadow: 0 0 0 3px rgba(255, 67, 49, 0.25);
 }
 
 textarea {
@@ -79,10 +82,7 @@ textarea {
   align-items: center;
   gap: 0.65rem;
   width: fit-content;
-  padding: 0.7rem 0.9rem;
-  border: 2px solid #000;
-  background: #fff;
-  box-shadow: 6px 6px 0 #000;
+  padding: 0.1rem 0;
 }
 
 .checkboxRow input[type='checkbox'] {
@@ -98,27 +98,27 @@ textarea {
 
 button {
   width: fit-content;
-  padding: 0.75rem 1.1rem;
+  padding: 0.85rem 1.2rem;
   border: 2px solid #000;
-  background: #fff;
-  color: #111;
+  background: #111;
+  color: #fff;
   cursor: pointer;
   font: inherit;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  box-shadow: 8px 8px 0 #000;
+  box-shadow: 7px 7px 0 #ff4331;
   transition: transform 120ms ease, box-shadow 120ms ease, background-color 120ms ease;
 }
 
 button:hover:not(:disabled) {
-  background: #fff4ec;
+  background: #2c2c2c;
   transform: translate(-1px, -1px);
-  box-shadow: 9px 9px 0 #000;
+  box-shadow: 9px 9px 0 #ff4331;
 }
 
 button:active:not(:disabled) {
   transform: translate(2px, 2px);
-  box-shadow: 5px 5px 0 #000;
+  box-shadow: 5px 5px 0 #ff4331;
 }
 
 button:disabled {
@@ -136,15 +136,13 @@ button:disabled {
 .statusMessage.success {
   color: #111;
   background: #e9ffd7;
-  border: 2px solid #000;
-  box-shadow: 6px 6px 0 #000;
+  border: 1px solid #000;
   padding: 0.65rem 0.9rem;
 }
 
 .statusMessage.error {
   color: #111;
   background: #ffdada;
-  border: 2px solid #000;
-  box-shadow: 6px 6px 0 #000;
+  border: 1px solid #000;
   padding: 0.65rem 0.9rem;
 }

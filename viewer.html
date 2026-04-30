@@ -85,48 +85,25 @@
         display: flex;
         align-items: center;
         position: relative;
+        padding: 0 18px 0 0;
       }
 
-      .ticker-wrap::before {
-        content: "";
-        position: absolute;
-        left: 0;
-        top: 0;
-        bottom: 0;
-        width: 65px;
-        background: linear-gradient(to right, #dea97c 0%, rgba(222, 169, 124, 0) 100%);
-        z-index: 3;
-        pointer-events: none;
-      }
-
-      .ticker-track {
-        display: inline-flex;
+      .cards-stage {
+        flex: 1;
+        min-width: 0;
+        display: flex;
         align-items: center;
-        width: max-content;
-        padding: 0;
-        gap: 0;
-        will-change: transform;
-        transform: translate3d(0, 0, 0);
-        backface-visibility: hidden;
-        contain: layout style paint;
-      }
-
-      .ticker-set {
-        display: inline-flex;
-        align-items: center;
-        gap: 18px;
-        backface-visibility: hidden;
-      }
-
-      .ticker-buffer {
-        flex: 0 0 520px;
-        width: 520px;
+        gap: 16px;
+        padding: 0 8px;
       }
 
       .request-card {
-        flex: 0 0 360px;
-        width: 360px;
-        height: 170px;
+        flex: 0 1 auto;
+        width: 280px;
+        min-width: 220px;
+        max-width: 560px;
+        min-height: 170px;
+        max-height: 190px;
         border: 2px solid #000;
         padding: 16px 18px;
         background: var(--panel-bg);
@@ -136,6 +113,20 @@
         box-shadow: 8px 8px 0 #000;
         backface-visibility: hidden;
         transform: translateZ(0);
+        overflow: hidden;
+        opacity: 0;
+        transform: translateY(12px);
+        transition: opacity 500ms ease, transform 500ms ease;
+      }
+
+      .request-card.visible {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .request-card.exiting {
+        opacity: 0;
+        transform: translateY(10px);
       }
 
       .request-name {
@@ -149,10 +140,14 @@
         color: var(--text-primary);
         font-size: 1rem;
         line-height: 1.35;
+        overflow-wrap: anywhere;
+      }
+
+      .request-text.truncated {
         overflow: hidden;
         display: -webkit-box;
-        -webkit-line-clamp: 4;
-        line-clamp: 4;
+        -webkit-line-clamp: 6;
+        line-clamp: 6;
         -webkit-box-orient: vertical;
       }
 
@@ -176,7 +171,7 @@
 
       <section class="ticker-wrap">
         <div id="status" class="status">Loading prayer requests...</div>
-        <div id="tickerTrack" class="ticker-track" style="display: none"></div>
+        <div id="cardsStage" class="cards-stage" style="display: none"></div>
       </section>
     </div>
 
@@ -185,21 +180,14 @@
 
       const convex = new ConvexClient("https://fast-bear-5.convex.cloud");
       const statusEl = document.getElementById("status");
-      const tickerTrack = document.getElementById("tickerTrack");
-      const pixelsPerSecond = 80;
+      const cardsStage = document.getElementById("cardsStage");
+      const fadeDurationMs = 500;
+      const dwellMultiplier = 1.75;
 
-      let displayedRequests = [];
-      let displayedIds = new Set();
-      let firstSetEl = null;
-      let secondSetEl = null;
-      let firstBufferEl = null;
-      let secondBufferEl = null;
-      let loopWidth = 0;
-      let tickerOffset = 0;
-      let animationFrameId = null;
-      let lastFrameTime = null;
-      let pendingAppends = [];
-      let pendingLiveIds = null;
+      let requestPlaylist = [];
+      let rotationIndex = 0;
+      let displayTimerId = null;
+      let activeCycleToken = 0;
 
       function escapeHtml(value) {
         return value
@@ -211,143 +199,160 @@
       }
 
       function extractFirstName(name) {
-        return name.trim().split(/\s+/)[0] ?? "";
+        const trimmed = name.trim();
+        if (!trimmed) {
+          return "Anonymous";
+        }
+        return trimmed.split(/\s+/)[0] ?? "Anonymous";
       }
 
-      function buildCardHtml(request) {
+      function cardWidthForRequest(request, stageWidth) {
+        const estimated = estimateCardWidth(request);
+        const maxForViewport = Math.max(240, Math.floor(stageWidth * 0.72));
+        return Math.min(estimated, maxForViewport);
+      }
+
+      function shouldTruncateMessage(request, stageWidth) {
+        const textLength = (request.prayerRequest ?? "").trim().length;
+        const cardWidth = cardWidthForRequest(request, stageWidth);
+        return textLength > 280 && cardWidth > stageWidth * 0.5;
+      }
+
+      function buildCardHtml(request, widthPx, truncateText = false) {
         const submittedName = request.name ?? request.firstName ?? "";
-        return `<article class="request-card"><div class="request-name">${escapeHtml(extractFirstName(submittedName))}</div><div class="request-text">${escapeHtml(request.prayerRequest)}</div></article>`;
+        const textClass = truncateText ? "request-text truncated" : "request-text";
+        return `<article class="request-card" style="width:${widthPx}px"><div class="request-name">${escapeHtml(extractFirstName(submittedName))}</div><div class="${textClass}">${escapeHtml(request.prayerRequest)}</div></article>`;
       }
 
-      function rebuildTickerSets() {
-        const cardsHtml = displayedRequests.map(buildCardHtml).join("");
-        tickerTrack.innerHTML = `<div class="ticker-set">${cardsHtml}<div class="ticker-buffer"></div></div><div class="ticker-set">${cardsHtml}<div class="ticker-buffer"></div></div>`;
-        [firstSetEl, secondSetEl] = tickerTrack.querySelectorAll(".ticker-set");
-        [firstBufferEl, secondBufferEl] = tickerTrack.querySelectorAll(".ticker-buffer");
-        if (!firstSetEl) {
-          loopWidth = 0;
-          return;
+      function estimateCardWidth(request) {
+        const textLength = (request.prayerRequest ?? "").trim().length;
+        if (textLength <= 60) return 220;
+        if (textLength <= 120) return 280;
+        if (textLength <= 180) return 340;
+        if (textLength <= 260) return 420;
+        if (textLength <= 360) return 500;
+        return 560;
+      }
+
+      function clearDisplayTimer() {
+        if (displayTimerId !== null) {
+          clearTimeout(displayTimerId);
+          displayTimerId = null;
         }
-
-        loopWidth = firstSetEl.scrollWidth;
       }
 
-      function stopTickerMotion() {
-        if (animationFrameId !== null) {
-          cancelAnimationFrame(animationFrameId);
-          animationFrameId = null;
+      function readTimeMs(batch) {
+        const maxChars = batch.reduce(
+          (currentMax, request) => Math.max(currentMax, (request.prayerRequest ?? "").trim().length),
+          0,
+        );
+        const cardCountPenalty = Math.max(0, batch.length - 1) * 600;
+        const adaptive = 3600 + maxChars * 70 + cardCountPenalty;
+        return Math.min(23000, Math.max(8500, adaptive * dwellMultiplier));
+      }
+
+      function nextBatch() {
+        if (!requestPlaylist.length) {
+          return [];
         }
-        lastFrameTime = null;
-      }
+        const stageWidth = cardsStage.clientWidth || 860;
+        const gap = 16;
+        const maxCards = Math.min(4, requestPlaylist.length);
+        const batch = [];
+        let usedWidth = 0;
 
-      function appendRequestToSets(request) {
-        const cardHtml = buildCardHtml(request);
-        firstBufferEl.insertAdjacentHTML("beforebegin", cardHtml);
-        secondBufferEl.insertAdjacentHTML("beforebegin", cardHtml);
-        loopWidth = firstSetEl.scrollWidth;
-      }
-
-      function tick(now) {
-        if (lastFrameTime === null) {
-          lastFrameTime = now;
-        }
-
-        const dtSeconds = (now - lastFrameTime) / 1000;
-        lastFrameTime = now;
-        tickerOffset -= pixelsPerSecond * dtSeconds;
-
-        if (loopWidth > 0 && tickerOffset <= -loopWidth) {
-          tickerOffset += loopWidth;
-          applyPendingChanges();
-          // Keep seam stable after any queued DOM changes.
-          tickerOffset = 0;
-        }
-
-        const stableOffset = Math.round(tickerOffset * 1000) / 1000;
-        tickerTrack.style.transform = `translate3d(${stableOffset}px, 0, 0)`;
-        animationFrameId = requestAnimationFrame(tick);
-      }
-
-      function startTickerMotion() {
-        stopTickerMotion();
-        animationFrameId = requestAnimationFrame(tick);
-      }
-
-      function renderInitialTicker(requests) {
-        displayedRequests = requests.slice().reverse();
-        displayedIds = new Set(displayedRequests.map((request) => request._id));
-
-        rebuildTickerSets();
-        statusEl.style.display = "none";
-        tickerTrack.style.display = "inline-flex";
-        tickerOffset = 0;
-        tickerTrack.style.transform = "translateX(0px)";
-        startTickerMotion();
-      }
-
-      function applyPendingChanges() {
-        if (!pendingAppends.length && !pendingLiveIds) {
-          return;
-        }
-
-        if (pendingAppends.length) {
-          for (const request of pendingAppends) {
-            if (!displayedIds.has(request._id)) {
-              displayedRequests.push(request);
-              displayedIds.add(request._id);
-              appendRequestToSets(request);
-            }
+        for (let offset = 0; offset < maxCards; offset += 1) {
+          const request = requestPlaylist[(rotationIndex + offset) % requestPlaylist.length];
+          const cardWidth = cardWidthForRequest(request, stageWidth);
+          const projected = usedWidth + (batch.length ? gap : 0) + cardWidth;
+          if (projected > stageWidth && batch.length > 0) {
+            break;
           }
-          pendingAppends = [];
+          batch.push(request);
+          usedWidth = projected;
         }
 
-        if (pendingLiveIds) {
-          // Ignore removals while ticker runs to avoid visible flicker from full-track rebuilds.
-          pendingLiveIds = null;
-        }
+        rotationIndex = (rotationIndex + Math.max(1, batch.length)) % requestPlaylist.length;
+        return batch;
       }
 
-      function queueTickerSync(requests) {
-        if (!displayedRequests.length) {
-          renderInitialTicker(requests);
+      function cycleCards() {
+        if (!requestPlaylist.length) {
+          showEmptyState("No public prayer requests yet.");
+          return;
+        }
+        activeCycleToken += 1;
+        const cycleToken = activeCycleToken;
+        const batch = nextBatch();
+        const stageWidth = cardsStage.clientWidth || 860;
+        cardsStage.innerHTML = batch
+          .map((request) => {
+            const cardWidth = cardWidthForRequest(request, stageWidth);
+            return buildCardHtml(
+              request,
+              cardWidth,
+              shouldTruncateMessage(request, stageWidth),
+            );
+          })
+          .join("");
+        const cards = Array.from(cardsStage.querySelectorAll(".request-card"));
+        statusEl.style.display = "none";
+        cardsStage.style.display = "flex";
+
+        requestAnimationFrame(() => {
+          if (cycleToken !== activeCycleToken) return;
+          cards.forEach((card) => card.classList.add("visible"));
+        });
+
+        const visibleForMs = readTimeMs(batch);
+        displayTimerId = setTimeout(() => {
+          if (cycleToken !== activeCycleToken) return;
+          cards.forEach((card) => {
+            card.classList.remove("visible");
+            card.classList.add("exiting");
+          });
+          displayTimerId = setTimeout(() => {
+            if (cycleToken !== activeCycleToken) return;
+            cycleCards();
+          }, fadeDurationMs);
+        }, visibleForMs);
+      }
+
+      function applyPlaylist(requests) {
+        const ordered = requests.slice().reverse();
+        const previousFirstId = requestPlaylist[0]?._id;
+        requestPlaylist = ordered;
+        if (!requestPlaylist.length) {
+          showEmptyState("No public prayer requests yet.");
           return;
         }
 
-        const liveIdsNow = new Set(requests.map((request) => request._id));
-        const knownIds = new Set([
-          ...displayedIds,
-          ...pendingAppends.map((request) => request._id),
-        ]);
-        const appended = requests
-          .slice()
-          .reverse()
-          .filter((request) => !knownIds.has(request._id));
-
-        if (appended.length) {
-          pendingAppends.push(...appended);
+        const currentIndexRequest = requestPlaylist.findIndex((request) => request._id === previousFirstId);
+        if (currentIndexRequest >= 0) {
+          rotationIndex = currentIndexRequest % requestPlaylist.length;
+        } else {
+          rotationIndex = rotationIndex % requestPlaylist.length;
         }
-
-        pendingLiveIds = liveIdsNow;
+        clearDisplayTimer();
+        cycleCards();
       }
 
       function showEmptyState(message) {
-        stopTickerMotion();
-        displayedRequests = [];
-        displayedIds = new Set();
-        pendingAppends = [];
-        pendingLiveIds = null;
-        firstSetEl = null;
-        secondSetEl = null;
-        firstBufferEl = null;
-        secondBufferEl = null;
-        loopWidth = 0;
-        tickerOffset = 0;
-        tickerTrack.style.transform = "translateX(0px)";
-        tickerTrack.style.display = "none";
-        tickerTrack.innerHTML = "";
+        activeCycleToken += 1;
+        clearDisplayTimer();
+        requestPlaylist = [];
+        rotationIndex = 0;
+        cardsStage.style.display = "none";
+        cardsStage.innerHTML = "";
         statusEl.textContent = message;
         statusEl.style.display = "block";
       }
+
+      window.addEventListener("resize", () => {
+        if (!requestPlaylist.length) return;
+        clearDisplayTimer();
+        cycleCards();
+      });
 
       function initRealtime() {
         try {
@@ -360,7 +365,7 @@
                 return;
               }
 
-              queueTickerSync(requests);
+              applyPlaylist(requests);
             },
             (error) => {
               showEmptyState(
