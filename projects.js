@@ -150,9 +150,6 @@
   }
 
   function initLogoChrome() {
-    var logo = document.querySelector(".site-logo");
-    if (!logo) return;
-
     var root = document.documentElement;
     var headerSampleOffset = 36;
     var colorProbe = document.createElement("div");
@@ -175,18 +172,6 @@
       });
       if (parts.length < 3) return null;
       return { r: parts[0], g: parts[1], b: parts[2] };
-    }
-
-    function luminance(color) {
-      function channel(value) {
-        var v = value / 255;
-        return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
-      }
-      return (
-        0.2126 * channel(color.r) +
-        0.7152 * channel(color.g) +
-        0.0722 * channel(color.b)
-      );
     }
 
     function sampleBackgroundColor() {
@@ -214,10 +199,6 @@
         "--header-blur-tint",
         tint.r + ", " + tint.g + ", " + tint.b
       );
-
-      var lightBackground = luminance(tint) >= 0.42;
-      logo.classList.toggle("logo-on-light", lightBackground);
-      logo.classList.toggle("logo-on-dark", !lightBackground);
 
       if (typeof window.updateHeaderNavTint === "function") {
         window.updateHeaderNavTint(tint);
