@@ -59,12 +59,12 @@
   color: var(--brand-color);
 }
 
-/* Active link on brand-tinted header bar: use page bg for contrast */
-.top-header.is-brand-tint .header-nav-link.is-active {
+/* Active link on brand-tinted header bar: use page bg for contrast (desktop nav only) */
+.top-header.is-brand-tint .header-nav .header-nav-link.is-active {
   color: var(--bg);
 }
 
-.top-header.is-brand-tint .header-nav-link.is-active:hover {
+.top-header.is-brand-tint .header-nav .header-nav-link.is-active:hover {
   color: var(--bg);
   opacity: 0.88;
 }
