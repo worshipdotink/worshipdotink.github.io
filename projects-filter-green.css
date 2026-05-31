@@ -1,0 +1,20 @@
+/* Green palette overrides — layout stays in oldsite/style.css */
+
+#filterbar {
+  background: var(--filter-bar-bg) !important;
+  border-top-color: var(--filter-bar-border-top) !important;
+  border-bottom-color: var(--filter-bar-border-bottom) !important;
+  box-shadow: 0 4px 30px var(--filter-bar-outer-shadow) !important;
+}
+
+#filterbar:hover {
+  background: var(--filter-bar-bg-hover) !important;
+  box-shadow: 0 0 10px 5px var(--filter-bar-hover-glow) !important;
+}
+
+#filterbar .sphericalbutton,
+#filterbar .filterbutton {
+  background: var(--filter-btn-bg) !important;
+  box-shadow: 0 4px 10px var(--filter-btn-inset) inset !important;
+  color: white !important;
+}

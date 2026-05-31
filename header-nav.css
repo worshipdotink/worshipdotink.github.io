@@ -1,0 +1,227 @@
+/* Site header: logo left, nav + contact right; mobile menu */
+
+.top-header {
+  cursor: default;
+}
+
+.header-content {
+  width: 100%;
+  max-width: none;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 28px;
+}
+
+.header-logo-link {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-right: auto;
+  text-decoration: none;
+  border-radius: 8px;
+  outline-offset: 3px;
+}
+
+.header-logo-link:focus-visible {
+  outline: 2px solid var(--brand-color);
+}
+
+.header-nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 4px 28px;
+}
+
+.header-nav-link {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-main);
+  text-decoration: none;
+  padding: 0.35rem 0.15rem;
+  border-radius: 4px;
+  transition: color 0.2s ease, opacity 0.2s ease;
+  white-space: nowrap;
+}
+
+.header-nav-link:hover {
+  color: var(--brand-color);
+}
+
+.header-nav-link:focus-visible {
+  outline: 2px solid var(--brand-color);
+  outline-offset: 2px;
+}
+
+.header-nav-link.is-active {
+  color: var(--brand-color);
+}
+
+/* Active link on brand-tinted header bar: use page bg for contrast */
+.top-header.is-brand-tint .header-nav-link.is-active {
+  color: var(--bg);
+}
+
+.top-header.is-brand-tint .header-nav-link.is-active:hover {
+  color: var(--bg);
+  opacity: 0.88;
+}
+
+.header-end {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.header-contact-btn {
+  font-size: 0.92rem;
+  padding: 0.5rem 1.1rem;
+  white-space: nowrap;
+  z-index: 2;
+}
+
+.header-contact-btn::before,
+.header-contact-btn::after {
+  border-radius: inherit;
+}
+
+.header-menu-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--text-main) 18%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--bg) 72%, transparent);
+  color: var(--text-main);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.header-menu-toggle:hover {
+  border-color: var(--brand-color);
+  background: color-mix(in srgb, var(--brand-color) 12%, var(--bg));
+}
+
+.header-menu-toggle:focus-visible {
+  outline: 2px solid var(--brand-color);
+  outline-offset: 2px;
+}
+
+.header-menu-icon {
+  display: block;
+  width: 20px;
+  height: 14px;
+  position: relative;
+}
+
+.header-menu-icon::before,
+.header-menu-icon::after,
+.header-menu-icon span {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 1px;
+  background: currentColor;
+  transition: transform 0.25s ease, top 0.25s ease, opacity 0.2s ease;
+}
+
+.header-menu-icon::before {
+  top: 0;
+}
+
+.header-menu-icon span {
+  top: 6px;
+}
+
+.header-menu-icon::after {
+  top: 12px;
+}
+
+.top-header.is-menu-open .header-menu-icon::before {
+  top: 6px;
+  transform: rotate(45deg);
+}
+
+.top-header.is-menu-open .header-menu-icon span {
+  opacity: 0;
+}
+
+.top-header.is-menu-open .header-menu-icon::after {
+  top: 6px;
+  transform: rotate(-45deg);
+}
+
+.header-mobile-menu {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 2;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid color-mix(in srgb, var(--text-main) 12%, transparent);
+  background: color-mix(in srgb, var(--bg) 92%, transparent);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22);
+}
+
+.top-header.is-menu-open .header-mobile-menu {
+  display: flex;
+}
+
+.header-mobile-menu .header-nav-link {
+  padding: 0.75rem 0.85rem;
+  border-radius: 8px;
+}
+
+.header-mobile-menu .header-nav-link:hover {
+  background: color-mix(in srgb, var(--brand-color) 14%, transparent);
+}
+
+.header-mobile-menu .header-contact-btn {
+  margin-top: 8px;
+  width: 100%;
+  justify-content: center;
+}
+
+.header-content {
+  position: relative;
+}
+
+@media (max-width: 768px) {
+  .header-nav,
+  .header-end .header-contact-btn {
+    display: none;
+  }
+
+  .header-menu-toggle {
+    display: inline-flex;
+  }
+
+  .header-end {
+    gap: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-nav-link,
+  .header-menu-toggle,
+  .header-menu-icon::before,
+  .header-menu-icon::after,
+  .header-menu-icon span {
+    transition: none;
+  }
+}

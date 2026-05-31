@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadence — Song Details Demo</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wght@6..144,1..1000&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="song-details-demo.css">
+  <style>
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      min-height: 100dvh;
+      background: #0a0a0a;
+      color: #fff;
+    }
+
+    body {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .standalone-demo-wrap {
+      width: min(100%, 360px);
+      aspect-ratio: 1;
+      background: #050d0a;
+      border-radius: 24px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      --card-accent: #ff7b51;
+    }
+
+    .standalone-demo-header {
+      padding: 8px 10px 10px;
+      font-family: "Google Sans Flex", sans-serif;
+    }
+
+    .standalone-demo-header h1 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .standalone-demo-header p {
+      margin: 0.2rem 0 0;
+      font-size: 0.85rem;
+      opacity: 0.65;
+    }
+
+    .standalone-demo-wrap .showcase-card-demo--song-details {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="standalone-demo-wrap">
+    <div class="standalone-demo-header">
+      <h1>Web Interaction Design</h1>
+      <p>Attention to the small details that matter</p>
+    </div>
+    <div class="showcase-card-demo showcase-card-demo--song-details">
+      <div class="song-details-demo" data-song-details-demo>
+        <div class="song-details-demo__panel">
+          <div class="song-details-content">
+            <div class="song-details-section">
+              <div class="song-details-header-wrapper">
+                <div class="song-album-art-container album-art-loaded">
+                  <img src="vinyl.png" alt="" aria-hidden="true" class="song-album-art-vinyl" data-vinyl />
+                  <img
+                    src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ff7b51'/%3E%3Cstop offset='45%25' stop-color='%23c44d8a'/%3E%3Cstop offset='100%25' stop-color='%232a1f4e'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='240' height='240' fill='url(%23g)'/%3E%3Ccircle cx='120' cy='120' r='52' fill='rgba(0,0,0,0.18)'/%3E%3Ctext x='120' y='128' text-anchor='middle' fill='rgba(255,255,255,0.85)' font-family='system-ui,sans-serif' font-size='22' font-weight='700'%3ECadence%3C/text%3E%3C/svg%3E"
+                    alt="Album art for Golden Hour"
+                    class="song-album-art" />
+                </div>
+
+                <div class="song-details-header-content">
+                  <h2 class="song-details-title">Golden Hour</h2>
+                  <div class="song-details-meta">
+                    <div class="detail-item">
+                      <span class="detail-label">BPM</span>
+                      <span class="detail-value">128</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Key</span>
+                      <span class="detail-value">A Major</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Time</span>
+                      <span class="detail-value">4/4</span>
+                    </div>
+                    <div class="detail-item">
+                      <span class="detail-label">Length</span>
+                      <span class="detail-value">3:42</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="song-click-track">
+                <button class="btn primary click-track-btn" type="button" data-click-track title="Click Track">
+                  <i class="fa-solid fa-play"></i> Click
+                </button>
+                <div class="song-click-track-info">
+                  <p class="song-click-track-title"><i class="fa-solid fa-drum"></i> Click Track</p>
+                  <p class="song-click-track-description">Set to 128 BPM</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="song-details-demo.js"></script>
+</body>
+
+</html>

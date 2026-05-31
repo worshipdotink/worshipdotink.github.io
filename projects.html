@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Projects | Michael Dors</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Google+Sans:ital,opsz,wght@0,17..18,400..700;1,17..18,400..700&family=IBM+Plex+Mono&family=Instrument+Serif:ital@0;1&family=Libre+Barcode+39&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" />
+  <link rel="stylesheet" href="../oldsite/style.css" />
+  <link rel="stylesheet" href="site-pages.css" />
+  <link rel="stylesheet" href="header-nav.css" />
+  <link rel="stylesheet" href="projects-filter-bridge.css" />
+  <link rel="stylesheet" href="projects-filter-green.css" />
+  <link rel="icon" type="image/x-icon" href="Images/fav.ico" />
+  <meta name="theme-color" content="#4a9a7b" />
+  <meta property="og:image" content="https://michaeldors.com/Images/projectcover.jpg" />
+  <meta property="og:title" content="Projects - Michael Dors" />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://michaeldors.com/projects" />
+  <meta property="og:description" content="Projects I've worked on or am currently working on." />
+  <meta property="og:site_name" content="Michael Dors" />
+</head>
+
+<body data-home-href="index.html">
+  <header class="top-header">
+    <div class="header-blur" aria-hidden="true">
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span></span>
+      <span class="header-blur-tint"></span>
+    </div>
+    <div class="header-content">
+      <a href="index.html" class="header-logo-link" aria-label="Home">
+        <img class="site-logo logo-on-light" src="logo.png" alt="" width="44" height="44" />
+      </a>
+      <nav class="header-nav" aria-label="Primary">
+        <a href="index.html" class="header-nav-link" data-nav-home data-nav-page="home">Home</a>
+        <a href="about.html" class="header-nav-link" data-nav-page="about">About</a>
+        <a href="projects.html" class="header-nav-link" data-nav-page="projects">Projects</a>
+      </nav>
+      <div class="header-end">
+        <a
+          class="btn primary header-contact-btn"
+          href="mailto:contact@michaeldors.com?subject=Hello%20from%20michaeldors.com"
+        >Contact</a>
+        <button
+          type="button"
+          class="header-menu-toggle"
+          aria-expanded="false"
+          aria-controls="header-mobile-menu"
+          aria-label="Open menu"
+        >
+          <span class="header-menu-icon" aria-hidden="true"><span></span></span>
+        </button>
+      </div>
+      <div id="header-mobile-menu" class="header-mobile-menu" hidden>
+        <a href="index.html" class="header-nav-link" data-nav-home data-nav-page="home">Home</a>
+        <a href="about.html" class="header-nav-link" data-nav-page="about">About</a>
+        <a href="projects.html" class="header-nav-link" data-nav-page="projects">Projects</a>
+        <a
+          class="btn primary header-contact-btn"
+          href="mailto:contact@michaeldors.com?subject=Hello%20from%20michaeldors.com"
+        >Contact</a>
+      </div>
+    </div>
+  </header>
+
+  <section id="filteringcontainer" aria-hidden="true">
+    <video id="filteranim" width="200" height="200" autoplay muted loop playsinline>
+      <source src="filteringanim.mp4" type="video/mp4" />
+    </video>
+  </section>
+
+  <div id="filterbar" class="upfilterbar" aria-label="Project filters">
+    <a class="sphericalbutton" onmouseup="togglefilters()"><i class="fa-solid fa-filter"></i> Refine</a>
+    <a class="sphericalbutton" onmouseup="nextproject()"><i class="fa-solid fa-circle-arrow-down"></i> Next</a>
+    <div id="filtertags">
+      <br />
+      <br />
+      <a class="filterbutton" onclick="filter('All');"><i class="fa-regular fa-rectangle-list"></i> Show All</a>
+      <br class="mobilebr" />
+      <br class="mobilebr" />
+      <a class="filterbutton" onclick="filter('Website');"><i class="fa-solid fa-globe"></i> Websites</a>
+      <br class="mobilebr" />
+      <br class="mobilebr" />
+      <a class="filterbutton" onclick="filter('Design');"><i class="fa-solid fa-pen-nib"></i> Designs</a>
+      <br />
+      <br />
+      <a class="filterbutton" onclick="filter('Shortcut');"><i class="fa-brands fa-apple"></i> Shortcuts</a>
+      <br class="mobilebr" />
+      <br class="mobilebr" />
+      <a class="filterbutton" onclick="filter('Video');"><i class="fa-solid fa-film"></i> Videos</a>
+      <br class="mobilebr" />
+      <br class="mobilebr" />
+      <a class="filterbutton" onclick="filter('Instagram');"><i class="fa-solid fa-camera-retro"></i> Instagram</a>
+    </div>
+    <div id="sorttags">
+      <br />
+      <br />
+      <a class="filterbutton" onclick="filter('All');"><i class="fa-regular fa-rectangle-list"></i> sorts</a>
+      <br class="mobilebr" />
+      <br class="mobilebr" />
+      <a class="filterbutton" onclick="filter('Website');"><i class="fa-solid fa-globe"></i> sorts</a>
+      <br class="mobilebr" />
+      <br class="mobilebr" />
+      <a class="filterbutton" onclick="filter('Design');"><i class="fa-solid fa-pen-nib"></i> sorts</a>
+      <br />
+      <br />
+      <a class="filterbutton" onclick="filter('Shortcut');"><i class="fa-brands fa-apple"></i> sorts</a>
+      <br class="mobilebr" />
+      <br class="mobilebr" />
+      <a class="filterbutton" onclick="filter('Video');"><i class="fa-solid fa-film"></i> sorts</a>
+      <br class="mobilebr" />
+      <br class="mobilebr" />
+      <a class="filterbutton" onclick="filter('Music');"><i class="fa-solid fa-music"></i> sorts</a>
+    </div>
+  </div>
+
+  <main id="projectcontainer" class="projects-main">
+    <section class="project-area" data-projecttype="website">
+      <p class="project-type">Website</p>
+      <h1 class="project-title">Countdown</h1>
+      <div class="project-media">
+        <img src="headers/countdown.png" alt="" width="520" height="280" loading="lazy" />
+      </div>
+      <p class="project-desc">A beautiful website to count down to any event with rich customization</p>
+      <a class="btn primary" target="_blank" rel="noopener noreferrer" href="http://countdown.michaeldors.com">Try It Out</a>
+    </section>
+
+    <section class="project-area" data-projecttype="shortcut">
+      <p class="project-type">Siri Shortcut</p>
+      <h1 class="project-title">MessageKit</h1>
+      <div class="project-media">
+        <img src="headers/messagekit.png" alt="" width="520" height="280" loading="lazy" />
+      </div>
+      <p class="project-desc">Tons of tools for messaging apps including modes for text, audio, images, and more</p>
+      <a class="btn primary" target="_blank" rel="noopener noreferrer" href="http://mk.michaeldors.com">Get It Free</a>
+    </section>
+
+    <section class="project-area" data-projecttype="website">
+      <p class="project-type">Website</p>
+      <h1 class="project-title">Canvas</h1>
+      <div class="project-media">
+        <img src="headers/canvascover.png" alt="" width="520" height="280" loading="lazy" />
+      </div>
+      <p class="project-desc">Basic site editor for clients to make their own changes</p>
+      <a class="btn primary" target="_blank" rel="noopener noreferrer" href="canvas/editor.html">Edit a Site</a>
+    </section>
+
+    <section class="project-area" data-projecttype="website">
+      <p class="project-type">Website</p>
+      <h1 class="project-title">Wiffdle</h1>
+      <div class="project-media">
+        <img src="headers/wiffdle.png" alt="" width="520" height="280" loading="lazy" />
+      </div>
+      <p class="project-desc">A fork of Poeltl Unlimited made to support MLW Wiffleball stats, daily challenges, and more</p>
+      <a class="btn primary" target="_blank" rel="noopener noreferrer" href="http://wiffdle.github.io">Play Now</a>
+    </section>
+
+    <section class="project-area" data-projecttype="website">
+      <p class="project-type">Website</p>
+      <h1 class="project-title">Margin</h1>
+      <div class="project-media">
+        <img src="headers/margin.png" alt="" width="520" height="280" loading="lazy" />
+      </div>
+      <p class="project-desc">A static, non-responsive landing page for a fictional budgeting app</p>
+      <a class="btn primary" target="_blank" rel="noopener noreferrer" href="http://michaeldors.com/marginexperiment/margin.html">Check It Out</a>
+    </section>
+
+    <section class="project-area" data-projecttype="video">
+      <p class="project-type">Video</p>
+      <h1 class="project-title">Ezdubs Edit</h1>
+      <div class="project-media">
+        <img src="headers/shorts.png" alt="" width="520" height="280" loading="lazy" />
+      </div>
+      <p class="project-desc">A high energy YouTube Shorts edit for creator Ezdubs.</p>
+      <a class="btn primary" target="_blank" rel="noopener noreferrer" href="https://youtube.com/shorts/wi5dz3WPMKo?si=fqMCNk3LdCBghzmW">Open YouTube</a>
+    </section>
+
+    <section class="project-area" data-projecttype="shortcut">
+      <p class="project-type">Siri Shortcut</p>
+      <h1 class="project-title">Pull Duolingo Streak</h1>
+      <div class="project-media">
+        <img src="headers/duolingostreak.png" alt="" width="520" height="280" loading="lazy" />
+      </div>
+      <p class="project-desc">The best way to scape Duolingo for your streak via Shortcuts</p>
+      <a class="btn primary" target="_blank" rel="noopener noreferrer" href="https://www.icloud.com/shortcuts/3fcd582c50454be7a1eff98bf78c1a05">I Want This</a>
+    </section>
+
+    <section class="project-area" data-projecttype="website">
+      <p class="project-type">Website</p>
+      <h1 class="project-title">Tarea</h1>
+      <div class="project-media">
+        <img src="headers/tarea.png" alt="" width="520" height="280" loading="lazy" />
+      </div>
+      <p class="project-desc">A landing page for a to-do app that I'm developing</p>
+      <a class="btn primary" target="_blank" rel="noopener noreferrer" href="http://michaeldors.com/tareaapp/index.html">Preview It</a>
+    </section>
+
+    <section class="project-area" data-projecttype="instagram">
+      <p class="project-type">Instagram</p>
+      <h1 class="project-title">michaeldors_</h1>
+      <div class="project-media">
+        <img src="headers/instagram.png" alt="" width="520" height="280" loading="lazy" />
+      </div>
+      <p class="project-desc">More private Instagram account for myself and my photos/videos</p>
+      <a class="btn primary" target="_blank" rel="noopener noreferrer" href="http://instagram.com/michaeldors_/">Request Follow</a>
+    </section>
+
+    <section class="project-area" data-projecttype="website">
+      <p class="project-type">Website</p>
+      <h1 class="project-title">Afterparty</h1>
+      <div class="project-media">
+        <img src="headers/afterparty.png" alt="" width="520" height="280" loading="lazy" />
+      </div>
+      <p class="project-desc">A fictional news company webpage</p>
+      <a class="btn primary" target="_blank" rel="noopener noreferrer" href="http://michaeldors.com/AFTRPRTY">Read All About It</a>
+    </section>
+
+    <section class="project-area" data-projecttype="shortcut">
+      <p class="project-type">Siri Shortcut</p>
+      <h1 class="project-title">Gradual</h1>
+      <div class="project-media">
+        <img src="headers/gradual.png" alt="" width="520" height="280" loading="lazy" />
+      </div>
+      <p class="project-desc">Wake up at an earlier time, over time. Select an end wakeup goal and how many days it should take to get there.</p>
+      <a class="btn primary" target="_blank" rel="noopener noreferrer" href="https://www.icloud.com/shortcuts/71e05c3f19cc48d192785983a170047d">Wake Up Early</a>
+    </section>
+
+    <section class="project-area" data-projecttype="scratch">
+      <p class="project-type">Scratch</p>
+      <h1 class="project-title">Pop The Balloon</h1>
+      <div class="project-media">
+        <img src="headers/scratch.png" alt="" width="520" height="280" loading="lazy" />
+      </div>
+      <p class="project-desc">An old (not so good) scratch project made many years ago.</p>
+      <a class="btn primary" target="_blank" rel="noopener noreferrer" href="https://scratch.mit.edu/projects/416422550">Play It Now</a>
+    </section>
+
+    <section class="project-area" data-projecttype="scratch">
+      <p class="project-type">Scratch</p>
+      <h1 class="project-title">Rocket Launch</h1>
+      <div class="project-media">
+        <img src="headers/scratch.png" alt="" width="520" height="280" loading="lazy" />
+      </div>
+      <p class="project-desc">Another scratch game from before I used Unity for games, while I was learning web development.</p>
+      <a class="btn primary" target="_blank" rel="noopener noreferrer" href="https://scratch.mit.edu/projects/419386012">Start The Game</a>
+    </section>
+
+    <section class="project-area" data-projecttype="website">
+      <p class="project-type">Website</p>
+      <h1 class="project-title">Perspective Playground</h1>
+      <div class="project-media">
+        <img src="headers/perspectiveplayground.png" alt="" width="520" height="280" loading="lazy" />
+      </div>
+      <p class="project-desc">[Desktop Experience] Manipulate images by moving your mouse around and watching them get warped.</p>
+      <a class="btn primary" target="_blank" rel="noopener noreferrer" href="https://michaeldors.com/perspective/playground">Open</a>
+    </section>
+
+    <footer class="page-footer">
+      <p>
+        created with
+        <span class="footer-icons" aria-hidden="true">
+          <i class="fa-solid fa-heart"></i>
+          <i class="fa-solid fa-code"></i>
+          <i class="fa-solid fa-photo-film"></i>
+        </span>
+      </p>
+      <p style="margin-top: 16px"><i class="fa-solid fa-cross" aria-hidden="true"></i></p>
+      <p id="birthdaycountdown" style="margin-top: 16px"></p>
+      <p class="barcode" aria-hidden="true">MICHAELDORS</p>
+    </footer>
+  </main>
+
+  <script src="header-nav.js"></script>
+  <script src="projects.js"></script>
+</body>
+
+</html>

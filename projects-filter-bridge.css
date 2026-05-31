@@ -1,0 +1,43 @@
+/* Let oldsite/style.css filter rules work on the new projects page */
+
+html,
+body {
+  opacity: 1 !important;
+  visibility: visible !important;
+  background: var(--bg) !important;
+  color: var(--text-main);
+  font-family: "Google Sans", -apple-system, BlinkMacSystemFont, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+/* Standalone projects page — keep bar on screen (downfilterbar = top: 150dvh off-screen) */
+body:has(#projectcontainer) #filterbar.downfilterbar,
+body:has(#projectcontainer) #filterbar.upfilterbar {
+  top: 85dvh;
+}
+
+#filteringcontainer {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  height: 100vh;
+  width: 100vw;
+  background-color: var(--bg) !important;
+}
+
+#filteranim {
+  border-radius: 30px;
+  margin: 0;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Filter bar uses original mono metrics (from old site body font) */
+#filterbar,
+#filterbar .sphericalbutton,
+#filterbar .filterbutton {
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  box-sizing: content-box !important;
+}
