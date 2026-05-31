@@ -1572,21 +1572,83 @@
       right: 12px;
     }
 
+    [data-showcase-design-carousel] {
+      --carousel-motion-ms: 560ms;
+      --carousel-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
     .showcase-design-carousel-viewport {
+      position: relative;
       overflow: hidden;
       border-radius: 16px;
       width: 100%;
     }
 
+    .showcase-design-carousel-stage {
+      position: relative;
+      width: 100%;
+      transform: scale(1);
+      transform-origin: center center;
+      filter: blur(0);
+      -webkit-filter: blur(0);
+      backface-visibility: hidden;
+      will-change: transform, filter;
+    }
+
+    .showcase-design-carousel-stage.is-transitioning {
+      animation: showcase-design-carousel-stage-motion var(--carousel-motion-ms) var(--carousel-motion-ease) both;
+    }
+
+    @keyframes showcase-design-carousel-stage-motion {
+      0%,
+      100% {
+        transform: scale(1);
+        filter: blur(0);
+        -webkit-filter: blur(0);
+      }
+
+      50% {
+        transform: scale(0.976);
+        filter: blur(3px);
+        -webkit-filter: blur(3px);
+      }
+    }
+
     .showcase-design-carousel-track {
       display: flex;
-      transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+      transition: transform var(--carousel-motion-ms) var(--carousel-motion-ease);
       will-change: transform;
+    }
+
+    .showcase-design-carousel-stickers {
+      position: absolute;
+      inset: 0;
+      z-index: 2;
+      overflow: hidden;
+      pointer-events: none;
+      border-radius: inherit;
+    }
+
+    .showcase-design-carousel-stickers .sticker {
+      pointer-events: auto;
+    }
+
+    .showcase-design-carousel-stage.is-transitioning .showcase-design-carousel-stickers .sticker {
+      transition:
+        left var(--carousel-motion-ms) var(--carousel-motion-ease),
+        top var(--carousel-motion-ms) var(--carousel-motion-ease);
     }
 
     .showcase-design-carousel-slide {
       flex: 0 0 100%;
       min-width: 0;
+    }
+
+    .showcase-design-carousel-slide img {
+      display: block;
+      width: 100%;
+      height: auto;
+      border-radius: inherit;
     }
 
     .showcase-design-carousel-pagination {
@@ -1670,7 +1732,18 @@
     }
 
     @media (prefers-reduced-motion: reduce) {
+      .showcase-design-carousel-stage.is-transitioning {
+        animation: none;
+        filter: none;
+        -webkit-filter: none;
+        transform: none;
+      }
+
       .showcase-design-carousel-track {
+        transition: none;
+      }
+
+      .showcase-design-carousel-stage.is-transitioning .showcase-design-carousel-stickers .sticker {
         transition: none;
       }
 
@@ -2483,7 +2556,14 @@
               aria-label="Graphic design gallery"
             >
               <div class="showcase-design-carousel-viewport">
-                <div class="showcase-design-carousel-track" data-showcase-design-track></div>
+                <div class="showcase-design-carousel-stage">
+                  <div class="showcase-design-carousel-track" data-showcase-design-track></div>
+                  <div
+                    class="showcase-design-carousel-stickers"
+                    data-design-carousel-stickers
+                    aria-hidden="true"
+                  ></div>
+                </div>
               </div>
               <button
                 type="button"
@@ -2655,7 +2735,7 @@
         </div>
       </div>
       <div class="about-inner">
-        <h2 class="about-title" id="aboutTitle">About Me</h2>
+        <h2 class="about-title" id="aboutTitle" style="margin-top:105px;">Hi, I'm Michael</h2>
         <div class="about-carousel" id="aboutCarousel">
           <div class="carousel-track" id="carouselTrack"></div>
         </div>
@@ -2705,6 +2785,16 @@
       var activeStickers = [];
       var aboutCarousel = document.getElementById("aboutCarousel");
       var carouselTrack = document.getElementById("carouselTrack");
+      var designCarouselEl = document.querySelector("[data-showcase-design-carousel]");
+      var designCarouselViewport = designCarouselEl
+        ? designCarouselEl.querySelector(".showcase-design-carousel-viewport")
+        : null;
+      var designCarouselStickerRoot = designCarouselEl
+        ? designCarouselEl.querySelector("[data-design-carousel-stickers]")
+        : null;
+      var designCarouselCurrentIndex = 0;
+      var designCarouselTrackIndex = 0;
+      var designCarouselCloneTrackIndex = 0;
       var hoverOutlineEl = null;
       var hoverOutlineImg = null;
       var hoveredStickerEl = null;
@@ -2832,8 +2922,16 @@
             width: stickerData.baseWidth || stickerData.dimensions.width,
             height: stickerData.baseHeight || stickerData.dimensions.height,
             attachedTo: stickerData.attachedTo,
-            relativeLeft: stickerData.relativeLeft
+            relativeLeft: stickerData.relativeLeft,
+            designCarouselSlideIndex: stickerData.designCarouselSlideIndex,
+            designCarouselOffsetX: stickerData.designCarouselOffsetX,
+            designCarouselOffsetY: stickerData.designCarouselOffsetY
           };
+          if (stickerData.attachedTo === "design-carousel") {
+            var layerCoords = getDesignCarouselStickerLayerCoords(stickerData);
+            state[stickerData.id].left = layerCoords.left;
+            state[stickerData.id].top = layerCoords.top;
+          }
         });
         try {
           sessionStorage.setItem(sessionStorageKey, JSON.stringify(state));
@@ -3949,6 +4047,270 @@
         }
       }
 
+      function getDesignCarouselIndex() {
+        return designCarouselCurrentIndex;
+      }
+
+      function getDesignCarouselTrackIndex() {
+        return designCarouselTrackIndex;
+      }
+
+      function getDesignCarouselSlideTrackPosition(slideIndex, trackIdx) {
+        if (slideIndex === 0 && trackIdx === designCarouselCloneTrackIndex) {
+          return designCarouselCloneTrackIndex;
+        }
+        return slideIndex;
+      }
+
+      function getDesignCarouselViewportRect(layerRect) {
+        if (!designCarouselViewport) return null;
+        return rectFromElement(designCarouselViewport, layerRect || getLayerRect());
+      }
+
+      function getDesignCarouselViewportWidth(layerRect) {
+        var viewportRect = getDesignCarouselViewportRect(layerRect);
+        if (!viewportRect) return 0;
+        return viewportRect.right - viewportRect.left;
+      }
+
+      function computeDesignCarouselStickerViewportPosition(slideIndex, offsetX, offsetY, layerRect) {
+        var viewportWidth = getDesignCarouselViewportWidth(layerRect);
+        var trackIdx = getDesignCarouselTrackIndex();
+        var slideTrackPos = getDesignCarouselSlideTrackPosition(slideIndex, trackIdx);
+        return {
+          left: (slideTrackPos - trackIdx) * viewportWidth + offsetX,
+          top: offsetY
+        };
+      }
+
+      function computeDesignCarouselStickerLeft(slideIndex, offsetX, layerRect, offsetY) {
+        var viewportRect = getDesignCarouselViewportRect(layerRect);
+        if (!viewportRect) return 0;
+        var viewportPos = computeDesignCarouselStickerViewportPosition(
+          slideIndex,
+          offsetX,
+          typeof offsetY === "number" ? offsetY : 0,
+          layerRect
+        );
+        return viewportRect.left + viewportPos.left;
+      }
+
+      function getDesignCarouselStickerLayerCoords(stickerData) {
+        var layerRect = getLayerRect();
+        var viewportRect = getDesignCarouselViewportRect(layerRect);
+        if (!viewportRect || typeof stickerData.designCarouselSlideIndex !== "number") {
+          return { left: stickerData.left, top: stickerData.top };
+        }
+        var viewportPos = computeDesignCarouselStickerViewportPosition(
+          stickerData.designCarouselSlideIndex,
+          stickerData.designCarouselOffsetX || 0,
+          stickerData.designCarouselOffsetY || 0,
+          layerRect
+        );
+        return {
+          left: viewportRect.left + viewportPos.left,
+          top: viewportRect.top + viewportPos.top
+        };
+      }
+
+      function isStickerInDesignCarouselRoot(stickerData) {
+        return Boolean(
+          designCarouselStickerRoot &&
+          stickerData.el.parentElement === designCarouselStickerRoot
+        );
+      }
+
+      function moveStickerToDesignCarouselRoot(stickerData) {
+        if (!designCarouselStickerRoot) return;
+
+        var layerRect = getLayerRect();
+        var viewportRect = getDesignCarouselViewportRect(layerRect);
+        var viewportWidth = getDesignCarouselViewportWidth(layerRect);
+        if (!viewportRect || !viewportWidth) return;
+
+        if (typeof stickerData.designCarouselSlideIndex !== "number") {
+          stickerData.designCarouselSlideIndex = getDesignCarouselIndex();
+        }
+
+        if (typeof stickerData.designCarouselOffsetX !== "number") {
+          var trackIdx = getDesignCarouselTrackIndex();
+          var slideTrackPos = getDesignCarouselSlideTrackPosition(
+            stickerData.designCarouselSlideIndex,
+            trackIdx
+          );
+          var viewportLeft = isStickerInDesignCarouselRoot(stickerData)
+            ? stickerData.left
+            : stickerData.left - viewportRect.left;
+          stickerData.designCarouselOffsetX = viewportLeft
+            - (slideTrackPos - trackIdx) * viewportWidth;
+        }
+
+        if (typeof stickerData.designCarouselOffsetY !== "number") {
+          stickerData.designCarouselOffsetY = stickerData.top - viewportRect.top;
+        }
+
+        var viewportPos = computeDesignCarouselStickerViewportPosition(
+          stickerData.designCarouselSlideIndex,
+          stickerData.designCarouselOffsetX,
+          stickerData.designCarouselOffsetY,
+          layerRect
+        );
+
+        designCarouselStickerRoot.appendChild(stickerData.el);
+        stickerData.el.classList.add("sticker--design-carousel");
+        setStickerPosition(stickerData.el, viewportPos.left, viewportPos.top);
+        stickerData.left = viewportPos.left;
+        stickerData.top = viewportPos.top;
+      }
+
+      function moveStickerToLayer(stickerData) {
+        if (!stickerLayer) return;
+
+        var layerCoords = getDesignCarouselStickerLayerCoords(stickerData);
+        stickerData.el.classList.remove("sticker--design-carousel");
+        stickerLayer.appendChild(stickerData.el);
+        setStickerPosition(stickerData.el, layerCoords.left, layerCoords.top);
+        stickerData.left = layerCoords.left;
+        stickerData.top = layerCoords.top;
+      }
+
+      function isStickerOverDesignCarousel(stickerRect) {
+        if (!designCarouselViewport) return false;
+        var viewportRect = designCarouselViewport.getBoundingClientRect();
+        var centerX = stickerRect.left + stickerRect.width / 2;
+        var centerY = stickerRect.top + stickerRect.height / 2;
+        return (
+          centerX >= viewportRect.left &&
+          centerX <= viewportRect.right &&
+          centerY >= viewportRect.top &&
+          centerY <= viewportRect.bottom
+        );
+      }
+
+      function attachStickerToDesignCarousel(stickerData) {
+        var layerRect = getLayerRect();
+        var viewportRect = getDesignCarouselViewportRect(layerRect);
+        var viewportWidth = getDesignCarouselViewportWidth(layerRect);
+        if (!viewportRect || !viewportWidth) return;
+
+        stickerData.attachedTo = "design-carousel";
+        stickerData.relativeLeft = 0;
+        stickerData.designCarouselSlideIndex = getDesignCarouselIndex();
+        var attachTrackIdx = getDesignCarouselTrackIndex();
+        var attachSlideTrackPos = getDesignCarouselSlideTrackPosition(
+          stickerData.designCarouselSlideIndex,
+          attachTrackIdx
+        );
+        stickerData.designCarouselOffsetX = stickerData.left - viewportRect.left
+          - (attachSlideTrackPos - attachTrackIdx) * viewportWidth;
+        stickerData.designCarouselOffsetY = stickerData.top - viewportRect.top;
+        moveStickerToDesignCarouselRoot(stickerData);
+      }
+
+      function clearDesignCarouselAttachment(stickerData) {
+        if (isStickerInDesignCarouselRoot(stickerData)) {
+          moveStickerToLayer(stickerData);
+        }
+        delete stickerData.designCarouselSlideIndex;
+        delete stickerData.designCarouselOffsetX;
+        delete stickerData.designCarouselOffsetY;
+      }
+
+      function updateDesignCarouselStickers(animate, options) {
+        if (!designCarouselViewport) return;
+        options = options || {};
+
+        var useTransition = animate && !reducedMotion;
+        var motionMs = 560;
+        var motionEase = "cubic-bezier(0.22, 1, 0.36, 1)";
+        if (designCarouselEl) {
+          var motionStyles = getComputedStyle(designCarouselEl);
+          var parsedMotionMs = parseFloat(motionStyles.getPropertyValue("--carousel-motion-ms"));
+          var parsedMotionEase = motionStyles.getPropertyValue("--carousel-motion-ease").trim();
+          if (!isNaN(parsedMotionMs)) {
+            motionMs = parsedMotionMs;
+          }
+          if (parsedMotionEase) {
+            motionEase = parsedMotionEase;
+          }
+        }
+        var transition =
+          "left " + motionMs + "ms " + motionEase + ", " +
+          "top " + motionMs + "ms " + motionEase + ", " +
+          "transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1)";
+        var layerRect = getLayerRect();
+        var viewportWidth = getDesignCarouselViewportWidth(layerRect);
+        var forwardWrap = Boolean(options.forwardWrap);
+        var previousTrackIndex = typeof options.previousTrackIndex === "number"
+          ? options.previousTrackIndex
+          : designCarouselTrackIndex;
+
+        activeStickers.forEach(function (stickerData) {
+          if (stickerData.attachedTo !== "design-carousel") return;
+          if (dragState && dragState.sticker === stickerData) return;
+          if (typeof stickerData.designCarouselSlideIndex !== "number") return;
+          if (typeof stickerData.designCarouselOffsetX !== "number") return;
+
+          if (!isStickerInDesignCarouselRoot(stickerData)) {
+            moveStickerToDesignCarouselRoot(stickerData);
+          }
+
+          var offsetX = stickerData.designCarouselOffsetX;
+          var offsetY = stickerData.designCarouselOffsetY;
+          var viewportPos;
+
+          if (
+            forwardWrap &&
+            stickerData.designCarouselSlideIndex === 0 &&
+            previousTrackIndex === designCarouselCloneTrackIndex - 1 &&
+            designCarouselTrackIndex === designCarouselCloneTrackIndex
+          ) {
+            var wrapStartLeft = viewportWidth + offsetX;
+            var wrapEndLeft = offsetX;
+            viewportPos = { left: wrapEndLeft, top: offsetY };
+
+            if (useTransition) {
+              stickerData.el.style.transition = "none";
+              setStickerPosition(stickerData.el, wrapStartLeft, offsetY);
+              void stickerData.el.offsetWidth;
+              stickerData.el.style.transition = transition;
+              stickerData.el.addEventListener("transitionend", function onWrapTransitionEnd(event) {
+                if (event.propertyName !== "left") return;
+                stickerData.el.style.transition = "";
+              }, { once: true });
+            }
+
+            setStickerPosition(stickerData.el, viewportPos.left, viewportPos.top);
+          } else {
+            viewportPos = computeDesignCarouselStickerViewportPosition(
+              stickerData.designCarouselSlideIndex,
+              offsetX,
+              offsetY,
+              layerRect
+            );
+
+            if (useTransition) {
+              stickerData.el.style.transition = transition;
+            } else {
+              stickerData.el.style.transition = "none";
+            }
+
+            setStickerPosition(stickerData.el, viewportPos.left, viewportPos.top);
+          }
+
+          stickerData.left = viewportPos.left;
+          stickerData.top = viewportPos.top;
+
+          if (stickerData.config && stickerData.config.dynamicRotation) {
+            var layerCoords = getDesignCarouselStickerLayerCoords(stickerData);
+            var newRotation = calculateDynamicRotation(layerCoords.left, stickerData.dimensions.width);
+            stickerData.rotation = newRotation;
+            stickerData.el.style.setProperty("--sticker-rotation", newRotation + "deg");
+            stickerData.el.style.transform = "rotate(" + newRotation + "deg)";
+          }
+        });
+      }
+
       function startDrag(event) {
         var target = event.target.closest(".sticker");
         if (!target) return;
@@ -3958,6 +4320,11 @@
         if (!stickerData) return;
 
         event.preventDefault();
+
+        if (stickerData.attachedTo === "design-carousel" && isStickerInDesignCarouselRoot(stickerData)) {
+          moveStickerToLayer(stickerData);
+        }
+
         var pointerX = event.clientX;
         var pointerY = event.clientY;
         var layerRect = getLayerRect();
@@ -4011,27 +4378,34 @@
           stickerData.el.style.transform = "rotate(" + newRotation + "deg)";
         }
 
-        var carouselRect = aboutCarousel ? aboutCarousel.getBoundingClientRect() : null;
+        var stickerRect = stickerData.el.getBoundingClientRect();
+        var attachedToDesignCarousel = isStickerOverDesignCarousel(stickerRect);
         var attachedToCarousel = false;
 
-        if (carouselRect) {
-          var stickerRect = stickerData.el.getBoundingClientRect();
-          var stickerCenterY = stickerRect.top + stickerRect.height / 2;
-          if (stickerCenterY >= carouselRect.top && stickerCenterY <= carouselRect.bottom) {
-            attachedToCarousel = true;
+        if (!attachedToDesignCarousel) {
+          var carouselRect = aboutCarousel ? aboutCarousel.getBoundingClientRect() : null;
+          if (carouselRect) {
+            var stickerCenterY = stickerRect.top + stickerRect.height / 2;
+            if (stickerCenterY >= carouselRect.top && stickerCenterY <= carouselRect.bottom) {
+              attachedToCarousel = true;
+            }
           }
         }
 
-        if (attachedToCarousel) {
-          stickerData.attachedTo = 'carousel';
+        if (attachedToDesignCarousel) {
+          attachStickerToDesignCarousel(stickerData);
+        } else if (attachedToCarousel) {
+          stickerData.attachedTo = "carousel";
           stickerData.relativeLeft = stickerData.left + aboutCarousel.scrollLeft;
+          clearDesignCarouselAttachment(stickerData);
         } else {
-          stickerData.attachedTo = 'body';
+          stickerData.attachedTo = "body";
           stickerData.relativeLeft = 0;
+          clearDesignCarouselAttachment(stickerData);
         }
 
         if (stickerData.config.persist) {
-          saveStickerState(stickerData.id, {
+          var persistState = {
             left: stickerData.left,
             top: stickerData.top,
             rotation: stickerData.rotation,
@@ -4040,7 +4414,16 @@
             height: stickerData.baseHeight || stickerData.dimensions.height,
             attachedTo: stickerData.attachedTo,
             relativeLeft: stickerData.relativeLeft
-          });
+          };
+          if (stickerData.attachedTo === "design-carousel") {
+            var savedLayerCoords = getDesignCarouselStickerLayerCoords(stickerData);
+            persistState.left = savedLayerCoords.left;
+            persistState.top = savedLayerCoords.top;
+            persistState.designCarouselSlideIndex = stickerData.designCarouselSlideIndex;
+            persistState.designCarouselOffsetX = stickerData.designCarouselOffsetX;
+            persistState.designCarouselOffsetY = stickerData.designCarouselOffsetY;
+          }
+          saveStickerState(stickerData.id, persistState);
         }
         dragState = null;
       }
@@ -4051,6 +4434,12 @@
         var i;
         for (i = 0; i < existingStickers.length; i++) {
           existingStickers[i].remove();
+        }
+        if (designCarouselStickerRoot) {
+          var designCarouselStickers = designCarouselStickerRoot.querySelectorAll(".sticker");
+          for (i = 0; i < designCarouselStickers.length; i++) {
+            designCarouselStickers[i].remove();
+          }
         }
         activeStickers = [];
 
@@ -4096,13 +4485,23 @@
 
           if (stored && typeof stored.left === "number" && typeof stored.top === "number") {
             var storedLeft = stored.left;
-            var isAttachedToCarousel = stored.attachedTo === 'carousel' && typeof stored.relativeLeft === "number";
+            var isAttachedToDesignCarousel = stored.attachedTo === "design-carousel"
+              && typeof stored.designCarouselSlideIndex === "number"
+              && typeof stored.designCarouselOffsetX === "number";
+            var isAttachedToCarousel = stored.attachedTo === "carousel" && typeof stored.relativeLeft === "number";
 
-            if (isAttachedToCarousel) {
+            if (isAttachedToDesignCarousel) {
+              storedLeft = computeDesignCarouselStickerLeft(
+                stored.designCarouselSlideIndex,
+                stored.designCarouselOffsetX,
+                layerRect,
+                stored.designCarouselOffsetY
+              );
+            } else if (isAttachedToCarousel) {
               storedLeft = stored.relativeLeft - (aboutCarousel ? aboutCarousel.scrollLeft : 0);
             }
 
-            var clampedStored = isAttachedToCarousel
+            var clampedStored = isAttachedToCarousel || isAttachedToDesignCarousel
               ? { left: storedLeft, top: stored.top }
               : clampStickerToLayer(storedLeft, stored.top, dimensions, layerRect);
 
@@ -4187,21 +4586,47 @@
 
           placedRects.push(getStickerOccupancyRect(position.left, position.top, dimensions, rotation, 10));
 
-          var isCarousel = false;
+          var attachment = "body";
           var relLeft = 0;
-          if (stored && stored.attachedTo) {
-            isCarousel = stored.attachedTo === 'carousel';
+          var designSlideIndex;
+          var designOffsetX;
+
+          if (stored && stored.attachedTo === "design-carousel"
+            && typeof stored.designCarouselSlideIndex === "number"
+            && typeof stored.designCarouselOffsetX === "number") {
+            attachment = "design-carousel";
+            designSlideIndex = stored.designCarouselSlideIndex;
+            designOffsetX = stored.designCarouselOffsetX;
+            designOffsetY = typeof stored.designCarouselOffsetY === "number"
+              ? stored.designCarouselOffsetY
+              : undefined;
+          } else if (stored && stored.attachedTo === "carousel") {
+            attachment = "carousel";
             relLeft = stored.relativeLeft || 0;
-          } else {
-            var stickerCenterY = position.top + dimensions.height / 2 + layerRect.top;
-            var carouselRect = aboutCarousel ? aboutCarousel.getBoundingClientRect() : null;
-            if (carouselRect && stickerCenterY >= carouselRect.top && stickerCenterY <= carouselRect.bottom) {
-              isCarousel = true;
-              relLeft = position.left + (aboutCarousel ? aboutCarousel.scrollLeft : 0);
+          } else if (!stored || !stored.attachedTo) {
+            var stickerRectForAttach = {
+              left: position.left + layerRect.left,
+              top: position.top + layerRect.top,
+              width: dimensions.width,
+              height: dimensions.height
+            };
+            if (isStickerOverDesignCarousel(stickerRectForAttach)) {
+              attachment = "design-carousel";
+              var viewportRect = getDesignCarouselViewportRect(layerRect);
+              designSlideIndex = getDesignCarouselIndex();
+              designOffsetX = position.left - viewportRect.left;
+              designOffsetY = position.top - viewportRect.top;
+            } else {
+              var stickerCenterY = position.top + dimensions.height / 2 + layerRect.top;
+              var carouselRect = aboutCarousel ? aboutCarousel.getBoundingClientRect() : null;
+              if (carouselRect && stickerCenterY >= carouselRect.top && stickerCenterY <= carouselRect.bottom) {
+                attachment = "carousel";
+                relLeft = position.left + (aboutCarousel ? aboutCarousel.scrollLeft : 0);
+              }
             }
           }
 
-          activeStickers.push({
+          var stickerRecord = {
             id: id,
             src: src,
             config: config,
@@ -4213,9 +4638,20 @@
             baseHeight: baseHeight,
             rotation: rotation,
             peeled: Boolean(!forceRandom && stored && stored.peeled),
-            attachedTo: isCarousel ? 'carousel' : 'body',
-            relativeLeft: isCarousel ? relLeft : 0
-          });
+            attachedTo: attachment,
+            relativeLeft: attachment === "carousel" ? relLeft : 0
+          };
+
+          if (attachment === "design-carousel") {
+            stickerRecord.designCarouselSlideIndex = designSlideIndex;
+            stickerRecord.designCarouselOffsetX = designOffsetX;
+            if (typeof designOffsetY === "number") {
+              stickerRecord.designCarouselOffsetY = designOffsetY;
+            }
+            moveStickerToDesignCarouselRoot(stickerRecord);
+          }
+
+          activeStickers.push(stickerRecord);
           });
 
           if (!forceRandom) {
@@ -4349,6 +4785,23 @@
           mountStickersWhenReady(true);
         }
       });
+
+      if (designCarouselEl) {
+        designCarouselEl.addEventListener("showcase-design-carousel-change", function (event) {
+          if (!event.detail || typeof event.detail.index !== "number") return;
+          designCarouselCurrentIndex = event.detail.index;
+          if (typeof event.detail.trackIndex === "number") {
+            designCarouselTrackIndex = event.detail.trackIndex;
+          }
+          if (typeof event.detail.cloneTrackIndex === "number") {
+            designCarouselCloneTrackIndex = event.detail.cloneTrackIndex;
+          }
+          updateDesignCarouselStickers(!event.detail.instant, {
+            forwardWrap: Boolean(event.detail.forwardWrap),
+            previousTrackIndex: event.detail.previousTrackIndex
+          });
+        });
+      }
 
       var isCarouselScrolling = false;
       if (aboutCarousel) {
@@ -5155,6 +5608,7 @@
       var carousel = document.querySelector("[data-showcase-design-carousel]");
       if (!carousel) return;
 
+      var stage = carousel.querySelector(".showcase-design-carousel-stage");
       var track = carousel.querySelector("[data-showcase-design-track]");
       var pagination = carousel.querySelector("[data-showcase-design-pagination]");
       var prevBtn = carousel.querySelector("[data-showcase-design-prev]");
@@ -5179,6 +5633,11 @@
       var total = slides.length;
       if (total === 0) return;
 
+      var cloneSlide = slides[0].cloneNode(true);
+      cloneSlide.classList.add("showcase-design-carousel-slide--clone");
+      cloneSlide.setAttribute("aria-hidden", "true");
+      track.appendChild(cloneSlide);
+
       if (total < 2) {
         if (prevBtn) prevBtn.hidden = true;
         if (nextBtn) nextBtn.hidden = true;
@@ -5191,7 +5650,90 @@
       var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       var autoAdvanceEnabled = !reducedMotion;
       var autoTimer = null;
+      var animTimers = [];
+      var isAnimating = false;
+      var transitionGeneration = 0;
       var index = 0;
+      var trackIndex = 0;
+      var cloneTrackIndex = total;
+
+      function clearAnimTimers() {
+        animTimers.forEach(function (timerId) {
+          clearTimeout(timerId);
+        });
+        animTimers = [];
+      }
+
+      function pushAnimTimer(timerId) {
+        animTimers.push(timerId);
+        return timerId;
+      }
+
+      function getMotionDurationMs() {
+        var styles = getComputedStyle(carousel);
+        return parseFloat(styles.getPropertyValue("--carousel-motion-ms")) || 560;
+      }
+
+      function resolveSlideTarget(requested, options) {
+        if (options.initial) {
+          return { track: 0, logical: 0 };
+        }
+        if (requested >= total) {
+          return { track: cloneTrackIndex, logical: 0 };
+        }
+        if (requested < 0) {
+          return { track: total - 1, logical: total - 1 };
+        }
+        if (index === total - 1 && requested === 0) {
+          return { track: cloneTrackIndex, logical: 0 };
+        }
+        return { track: requested, logical: requested };
+      }
+
+      function snapAfterCloneIfNeeded() {
+        if (trackIndex !== cloneTrackIndex) {
+          return;
+        }
+        track.style.transition = "none";
+        track.style.transform = "translateX(0)";
+        trackIndex = 0;
+        void track.offsetWidth;
+        track.style.transition = "";
+        carousel.dispatchEvent(new CustomEvent("showcase-design-carousel-change", {
+          bubbles: true,
+          detail: {
+            index: index,
+            trackIndex: trackIndex,
+            cloneTrackIndex: cloneTrackIndex,
+            instant: true
+          }
+        }));
+      }
+
+      function applySlidePositions(targetTrack, logicalIndex, previousTrack) {
+        var prevTrack = typeof previousTrack === "number" ? previousTrack : trackIndex;
+        var forwardWrap = targetTrack === cloneTrackIndex
+          && logicalIndex === 0
+          && prevTrack === total - 1;
+        trackIndex = targetTrack;
+        index = logicalIndex;
+        track.style.transform = "translateX(-" + trackIndex * 100 + "%)";
+        carousel.dispatchEvent(new CustomEvent("showcase-design-carousel-change", {
+          bubbles: true,
+          detail: {
+            index: index,
+            trackIndex: trackIndex,
+            cloneTrackIndex: cloneTrackIndex,
+            previousTrackIndex: prevTrack,
+            forwardWrap: forwardWrap
+          }
+        }));
+        dots.forEach(function (dot, dotIndex) {
+          var active = dotIndex === index;
+          dot.setAttribute("aria-current", active ? "true" : "false");
+          dot.setAttribute("aria-selected", active ? "true" : "false");
+        });
+      }
 
       pagination.style.setProperty("--carousel-interval", AUTO_INTERVAL_MS + "ms");
 
@@ -5245,7 +5787,7 @@
         clearAutoTimer();
         restartProgressAnimation();
         autoTimer = setTimeout(function () {
-          goTo(index + 1, { auto: true });
+          advanceNext({ auto: true });
         }, AUTO_INTERVAL_MS);
       }
 
@@ -5256,44 +5798,120 @@
         pagination.classList.remove("is-auto-advancing");
       }
 
-      function goTo(nextIndex, options) {
-        options = options || {};
-        if (options.manual) {
-          stopAutoAdvance();
+      function finishCarouselTransition(transitionDone) {
+        if (transitionDone.done) {
+          return;
         }
+        transitionDone.done = true;
 
-        index = (nextIndex + total) % total;
-        track.style.transform = "translateX(-" + index * 100 + "%)";
-        dots.forEach(function (dot, dotIndex) {
-          var active = dotIndex === index;
-          dot.setAttribute("aria-current", active ? "true" : "false");
-          dot.setAttribute("aria-selected", active ? "true" : "false");
-        });
-
+        if (stage) {
+          stage.classList.remove("is-transitioning");
+        }
+        snapAfterCloneIfNeeded();
+        isAnimating = false;
         if (autoAdvanceEnabled) {
           scheduleAutoAdvance();
         }
       }
 
+      function advanceNext(options) {
+        if (index >= total - 1) {
+          goTo(0, options);
+        } else {
+          goTo(index + 1, options);
+        }
+      }
+
+      function advancePrev(options) {
+        if (index <= 0) {
+          goTo(total - 1, options);
+        } else {
+          goTo(index - 1, options);
+        }
+      }
+
+      function goTo(requestedIndex, options) {
+        options = options || {};
+        if (options.manual) {
+          stopAutoAdvance();
+        }
+
+        var target = resolveSlideTarget(requestedIndex, options);
+        if (target.logical === index && target.track === trackIndex && !options.initial) {
+          return;
+        }
+
+        clearAnimTimers();
+        clearAutoTimer();
+
+        if (options.initial || reducedMotion || !stage) {
+          if (stage) {
+            stage.classList.remove("is-transitioning");
+          }
+          isAnimating = false;
+          applySlidePositions(target.track, target.logical);
+          snapAfterCloneIfNeeded();
+          if (autoAdvanceEnabled && !options.initial) {
+            scheduleAutoAdvance();
+          }
+          return;
+        }
+
+        var motionMs = getMotionDurationMs();
+        transitionGeneration += 1;
+        var activeGeneration = transitionGeneration;
+        var transitionDone = { done: false };
+        isAnimating = true;
+        stage.classList.add("is-transitioning");
+
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            if (activeGeneration !== transitionGeneration) {
+              return;
+            }
+            applySlidePositions(target.track, target.logical, trackIndex);
+          });
+        });
+
+        function onTrackTransitionEnd(event) {
+          if (activeGeneration !== transitionGeneration) {
+            return;
+          }
+          if (event.target !== track || event.propertyName !== "transform") {
+            return;
+          }
+          track.removeEventListener("transitionend", onTrackTransitionEnd);
+          finishCarouselTransition(transitionDone);
+        }
+
+        track.addEventListener("transitionend", onTrackTransitionEnd);
+        pushAnimTimer(setTimeout(function () {
+          track.removeEventListener("transitionend", onTrackTransitionEnd);
+          if (isAnimating && activeGeneration === transitionGeneration) {
+            finishCarouselTransition(transitionDone);
+          }
+        }, motionMs + 80));
+      }
+
       if (prevBtn) {
         prevBtn.addEventListener("click", function () {
-          goTo(index - 1, { manual: true });
+          advancePrev({ manual: true });
         });
       }
 
       if (nextBtn) {
         nextBtn.addEventListener("click", function () {
-          goTo(index + 1, { manual: true });
+          advanceNext({ manual: true });
         });
       }
 
       carousel.addEventListener("keydown", function (event) {
         if (event.key === "ArrowLeft") {
           event.preventDefault();
-          goTo(index - 1, { manual: true });
+          advancePrev({ manual: true });
         } else if (event.key === "ArrowRight") {
           event.preventDefault();
-          goTo(index + 1, { manual: true });
+          advanceNext({ manual: true });
         }
       });
 
@@ -5301,7 +5919,10 @@
         pagination.classList.add("is-auto-advancing");
       }
 
-      goTo(0);
+      goTo(0, { initial: true });
+      if (autoAdvanceEnabled) {
+        scheduleAutoAdvance();
+      }
     })();
 
   </script>
