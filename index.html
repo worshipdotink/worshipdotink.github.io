@@ -2682,6 +2682,7 @@
       var stickerLayer = document.getElementById("stickerLayer");
       var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       var storageKey = "stickerLayout.v2";
+      var sessionStorageKey = "stickerLayout.session";
       var dragState = null;
       var zCounter = 40;
       var imageMetaCache = {};
@@ -2793,13 +2794,51 @@
       }
 
       function getStoredState() {
+        var state = {};
+        try {
+          var sessionRaw = sessionStorage.getItem(sessionStorageKey);
+          if (sessionRaw) {
+            var sessionParsed = JSON.parse(sessionRaw);
+            if (sessionParsed && typeof sessionParsed === "object") {
+              state = sessionParsed;
+            }
+          }
+        } catch (error) {
+          /* ignore */
+        }
         try {
           var raw = localStorage.getItem(storageKey);
-          if (!raw) return {};
+          if (!raw) return state;
           var parsed = JSON.parse(raw);
-          return parsed && typeof parsed === "object" ? parsed : {};
+          if (parsed && typeof parsed === "object") {
+            Object.keys(parsed).forEach(function (id) {
+              state[id] = parsed[id];
+            });
+          }
         } catch (error) {
-          return {};
+          /* ignore */
+        }
+        return state;
+      }
+
+      function saveSessionLayout() {
+        if (!activeStickers.length) return;
+        var state = {};
+        activeStickers.forEach(function (stickerData) {
+          state[stickerData.id] = {
+            left: stickerData.left,
+            top: stickerData.top,
+            rotation: stickerData.rotation,
+            width: stickerData.baseWidth || stickerData.dimensions.width,
+            height: stickerData.baseHeight || stickerData.dimensions.height,
+            attachedTo: stickerData.attachedTo,
+            relativeLeft: stickerData.relativeLeft
+          };
+        });
+        try {
+          sessionStorage.setItem(sessionStorageKey, JSON.stringify(state));
+        } catch (error) {
+          /* ignore */
         }
       }
 
@@ -4178,6 +4217,10 @@
             relativeLeft: isCarousel ? relLeft : 0
           });
           });
+
+          if (!forceRandom) {
+            saveSessionLayout();
+          }
         });
       }
 
@@ -4214,16 +4257,30 @@
           return;
         }
 
+        // Mobile browser chrome show/hide changes height, not real layout.
         if (
           !dprChanged &&
+          isMobileStickerLayout() &&
           Math.abs(nextWidth - lastLayoutWidth) < 2 &&
-          Math.abs(nextHeight - lastLayoutHeight) > 60
+          nextHeight !== lastLayoutHeight
         ) {
+          lastLayoutHeight = nextHeight;
           return;
         }
 
         lastLayoutWidth = nextWidth;
         lastLayoutHeight = nextHeight;
+        scheduleStickerRemount();
+      }
+
+      function onVisualViewportResize() {
+        if (dragState) return;
+
+        var nextDevicePixelRatio = window.devicePixelRatio || 1;
+        if (nextDevicePixelRatio === lastDevicePixelRatio) return;
+
+        lastDevicePixelRatio = nextDevicePixelRatio;
+        imageMetaCache = {};
         scheduleStickerRemount();
       }
 
@@ -4242,6 +4299,7 @@
 
         try {
           localStorage.removeItem(storageKey);
+          sessionStorage.removeItem(sessionStorageKey);
         } catch (error) {
           /* ignore */
         }
@@ -4274,7 +4332,7 @@
       window.addEventListener("pointercancel", onPointerEnd);
       window.addEventListener("resize", onResize);
       if (window.visualViewport) {
-        window.visualViewport.addEventListener("resize", onResize);
+        window.visualViewport.addEventListener("resize", onVisualViewportResize);
       }
       window.addEventListener("keydown", onRandomizeKey);
 
