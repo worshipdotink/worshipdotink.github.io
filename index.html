@@ -1578,8 +1578,9 @@
     }
 
     [data-showcase-design-carousel] {
-      --carousel-motion-ms: 360ms;
-      --carousel-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+      --carousel-motion-ms: 370ms;
+      --carousel-motion-ease: cubic-bezier(0.7, 0, 0.3, 1);
+ 
     }
 
     .showcase-design-carousel-viewport {
@@ -1613,9 +1614,13 @@
       }
 
       50% {
-        transform: scale(0.976);
+        transform: scale(1.028);
         filter: blur(3px);
         -webkit-filter: blur(3px);
+      }
+      75%{
+        transform: scale(1.028);
+
       }
     }
 
@@ -4044,17 +4049,43 @@
         }
       }
 
+      function isDynamicRotationPaused(stickerData) {
+        return stickerData.attachedTo === "carousel" || stickerData.attachedTo === "design-carousel";
+      }
+
+      function applyStickerRotation(stickerData, rotation) {
+        stickerData.rotation = rotation;
+        stickerData.el.style.setProperty("--sticker-rotation", rotation + "deg");
+        stickerData.el.style.transform = "rotate(" + rotation + "deg)";
+      }
+
+      function getStickerLayerLeftForRotation(stickerData) {
+        if (isStickerInDesignCarouselRoot(stickerData)) {
+          return getDesignCarouselStickerLayerCoords(stickerData).left;
+        }
+        return stickerData.left;
+      }
+
+      function syncDynamicRotation(stickerData, layerLeft) {
+        if (!stickerData.config || !stickerData.config.dynamicRotation) return;
+        if (isDynamicRotationPaused(stickerData)) return;
+        applyStickerRotation(
+          stickerData,
+          calculateDynamicRotation(layerLeft, stickerData.dimensions.width)
+        );
+      }
+
+      function resumeDynamicRotation(stickerData) {
+        if (!stickerData.config || !stickerData.config.dynamicRotation) return;
+        if (isDynamicRotationPaused(stickerData)) return;
+        syncDynamicRotation(stickerData, getStickerLayerLeftForRotation(stickerData));
+      }
+
       function applyStickerDrag(stickerData, left, top) {
         setStickerPosition(stickerData.el, left, top);
         stickerData.left = left;
         stickerData.top = top;
-
-        if (stickerData.config.dynamicRotation) {
-          var newRotation = calculateDynamicRotation(left, stickerData.dimensions.width);
-          stickerData.rotation = newRotation;
-          stickerData.el.style.setProperty("--sticker-rotation", newRotation + "deg");
-          stickerData.el.style.transform = "rotate(" + newRotation + "deg)";
-        }
+        syncDynamicRotation(stickerData, left);
       }
 
       function getDesignCarouselIndex() {
@@ -4293,14 +4324,6 @@
 
           stickerData.left = viewportPos.left;
           stickerData.top = viewportPos.top;
-
-          if (stickerData.config && stickerData.config.dynamicRotation) {
-            var layerCoords = getDesignCarouselStickerLayerCoords(stickerData);
-            var newRotation = calculateDynamicRotation(layerCoords.left, stickerData.dimensions.width);
-            stickerData.rotation = newRotation;
-            stickerData.el.style.setProperty("--sticker-rotation", newRotation + "deg");
-            stickerData.el.style.transform = "rotate(" + newRotation + "deg)";
-          }
         });
       }
 
@@ -4395,6 +4418,10 @@
           stickerData.attachedTo = "body";
           stickerData.relativeLeft = 0;
           clearDesignCarouselAttachment(stickerData);
+        }
+
+        if (stickerData.config.dynamicRotation && stickerData.attachedTo === "body") {
+          resumeDynamicRotation(stickerData);
         }
 
         if (stickerData.config.persist) {
@@ -4806,13 +4833,6 @@
                   var newLeft = stickerData.relativeLeft - aboutCarousel.scrollLeft;
                   setStickerPosition(stickerData.el, newLeft, stickerData.top);
                   stickerData.left = newLeft;
-
-                  if (stickerData.config && stickerData.config.dynamicRotation) {
-                    var newRotation = calculateDynamicRotation(newLeft, stickerData.dimensions.width);
-                    stickerData.rotation = newRotation;
-                    stickerData.el.style.setProperty("--sticker-rotation", newRotation + "deg");
-                    stickerData.el.style.transform = "rotate(" + newRotation + "deg)";
-                  }
                 }
               });
               isCarouselScrolling = false;
@@ -5146,7 +5166,7 @@
             parseFloat(getComputedStyle(songDemo).paddingTop) +
             parseFloat(getComputedStyle(songDemo).paddingBottom);
           songDemo.style.minHeight =
-            Math.ceil(songContent.getBoundingClientRect().height + padY + 4) + "px";
+            Math.ceil(songContent.getBoundingClientRect().height + padY + 20) + "px";
         }
 
         if (codeDemo && codeBlock) {
@@ -5922,6 +5942,7 @@
   <script>
     (function () {
       var activeMailtoActionMenu = null;
+      var activeMailtoActionMenuAnchor = null;
       var mailtoActionMenuListenersAttached = false;
 
       function escapeHtml(text) {
@@ -6025,6 +6046,7 @@
         if (!activeMailtoActionMenu) return;
         var menu = activeMailtoActionMenu;
         activeMailtoActionMenu = null;
+        activeMailtoActionMenuAnchor = null;
         if (options.immediate) {
           menu.remove();
           return;
@@ -6058,6 +6080,12 @@
       function openMobileMailtoActionMenu(email, anchorEl) {
         if (!email || !anchorEl || !isMobileDevice()) return;
         ensureMailtoActionMenuListeners();
+
+        if (activeMailtoActionMenu && activeMailtoActionMenuAnchor === anchorEl) {
+          closeMailtoActionMenu();
+          return;
+        }
+
         closeMailtoActionMenu({ immediate: true });
 
         var menu = document.createElement("div");
@@ -6101,6 +6129,7 @@
         });
 
         activeMailtoActionMenu = menu;
+        activeMailtoActionMenuAnchor = anchorEl;
       }
 
       function bindMailtoCopyButtons(root) {
