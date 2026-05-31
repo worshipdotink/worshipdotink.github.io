@@ -720,6 +720,11 @@
       will-change: transform;
     }
 
+    /* About / hero stickers: never ease left — must track scroll 1:1 */
+    .sticker-layer > .sticker {
+      transition-property: transform, filter;
+    }
+
     .sticker img {
       width: 100%;
       height: 100%;
@@ -1573,7 +1578,7 @@
     }
 
     [data-showcase-design-carousel] {
-      --carousel-motion-ms: 560ms;
+      --carousel-motion-ms: 360ms;
       --carousel-motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
     }
 
@@ -1631,6 +1636,11 @@
 
     .showcase-design-carousel-stickers .sticker {
       pointer-events: auto;
+      transition: transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .showcase-design-carousel-stickers .sticker.sticker--design-wrap-flush {
+      transition: none !important;
     }
 
     .showcase-design-carousel-stage.is-transitioning .showcase-design-carousel-stickers .sticker {
@@ -4168,6 +4178,7 @@
 
         var layerCoords = getDesignCarouselStickerLayerCoords(stickerData);
         stickerData.el.classList.remove("sticker--design-carousel");
+        clearDesignCarouselStickerMotion(stickerData.el);
         stickerLayer.appendChild(stickerData.el);
         setStickerPosition(stickerData.el, layerCoords.left, layerCoords.top);
         stickerData.left = layerCoords.left;
@@ -4211,9 +4222,16 @@
         if (isStickerInDesignCarouselRoot(stickerData)) {
           moveStickerToLayer(stickerData);
         }
+        clearDesignCarouselStickerMotion(stickerData.el);
         delete stickerData.designCarouselSlideIndex;
         delete stickerData.designCarouselOffsetX;
         delete stickerData.designCarouselOffsetY;
+      }
+
+      function clearDesignCarouselStickerMotion(stickerEl) {
+        if (!stickerEl) return;
+        stickerEl.style.removeProperty("transition");
+        stickerEl.classList.remove("sticker--design-wrap-flush");
       }
 
       function updateDesignCarouselStickers(animate, options) {
@@ -4221,23 +4239,6 @@
         options = options || {};
 
         var useTransition = animate && !reducedMotion;
-        var motionMs = 560;
-        var motionEase = "cubic-bezier(0.22, 1, 0.36, 1)";
-        if (designCarouselEl) {
-          var motionStyles = getComputedStyle(designCarouselEl);
-          var parsedMotionMs = parseFloat(motionStyles.getPropertyValue("--carousel-motion-ms"));
-          var parsedMotionEase = motionStyles.getPropertyValue("--carousel-motion-ease").trim();
-          if (!isNaN(parsedMotionMs)) {
-            motionMs = parsedMotionMs;
-          }
-          if (parsedMotionEase) {
-            motionEase = parsedMotionEase;
-          }
-        }
-        var transition =
-          "left " + motionMs + "ms " + motionEase + ", " +
-          "top " + motionMs + "ms " + motionEase + ", " +
-          "transform 500ms cubic-bezier(0.34, 1.56, 0.64, 1)";
         var layerRect = getLayerRect();
         var viewportWidth = getDesignCarouselViewportWidth(layerRect);
         var forwardWrap = Boolean(options.forwardWrap);
@@ -4255,6 +4256,8 @@
             moveStickerToDesignCarouselRoot(stickerData);
           }
 
+          clearDesignCarouselStickerMotion(stickerData.el);
+
           var offsetX = stickerData.designCarouselOffsetX;
           var offsetY = stickerData.designCarouselOffsetY;
           var viewportPos;
@@ -4270,14 +4273,10 @@
             viewportPos = { left: wrapEndLeft, top: offsetY };
 
             if (useTransition) {
-              stickerData.el.style.transition = "none";
+              stickerData.el.classList.add("sticker--design-wrap-flush");
               setStickerPosition(stickerData.el, wrapStartLeft, offsetY);
               void stickerData.el.offsetWidth;
-              stickerData.el.style.transition = transition;
-              stickerData.el.addEventListener("transitionend", function onWrapTransitionEnd(event) {
-                if (event.propertyName !== "left") return;
-                stickerData.el.style.transition = "";
-              }, { once: true });
+              stickerData.el.classList.remove("sticker--design-wrap-flush");
             }
 
             setStickerPosition(stickerData.el, viewportPos.left, viewportPos.top);
@@ -4288,12 +4287,6 @@
               offsetY,
               layerRect
             );
-
-            if (useTransition) {
-              stickerData.el.style.transition = transition;
-            } else {
-              stickerData.el.style.transition = "none";
-            }
 
             setStickerPosition(stickerData.el, viewportPos.left, viewportPos.top);
           }
